@@ -1,0 +1,1 @@
+sudo ./bin/spark-submit --class "com.mycompany.app.App"  --packages org.apache.spark:spark-streaming-kafka_2.10:1.6.1 --jars ../google-collections-1.0.jar First_app-1.0-SNAPSHOT.jar 127.0.0.1:2181 01 apache_access_topic 1
