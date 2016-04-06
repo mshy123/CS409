@@ -17,13 +17,19 @@
     </dependency>
     <dependency>
 	  <groupId>org.apache.spark</groupId>
-      <artifactId>spark-streaming_2.11</artifactId>
+	  <artifactId>spark-core_2.10</artifactId>
+	  <version>1.6.1</version>
+	  <scope>provided</scope>
+	</dependency>
+    <dependency>
+	  <groupId>org.apache.spark</groupId>
+      <artifactId>spark-streaming_2.10</artifactId>
 	  <version>1.6.1</version>
 	  <scope>provided</scope>
 	</dependency>
 	<dependency>
 	  <groupId>org.apache.spark</groupId>
-	  <artifactId>spark-streaming-kafka_2.11</artifactId>
+	  <artifactId>spark-streaming-kafka_2.10</artifactId>
 	  <version>1.6.1</version>
 	</dependency>
     <dependency>
@@ -32,4 +38,26 @@
 	  <version>1.0</version>
     </dependency>
   </dependencies>
+  <build>
+  <plugins>
+  <plugin>
+	<artifactId>maven-assembly-plugin</artifactId>
+	<version>2.2</version>
+	<configuration>
+	  <descriptorRefs>
+		<descriptorRef>jar-with-dependencies</descriptorRef>
+	  </descriptorRefs>
+	</configuration>
+	<executions>
+	  <execution>
+		<id>make-assembly</id>
+		<phase>package</phase>
+		<goals>
+		  <goal>single</goal>
+		</goals>
+	  </execution>
+    </executions>
+</plugin>
+</plugins>
+</build>
 </project>
