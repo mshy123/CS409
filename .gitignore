@@ -1,6 +1,3 @@
-### not sh file
-!.sh
-
 ### kafka and spark
 apache-maven-3.3.9/
 kafka/
@@ -25,3 +22,7 @@ Session.vim
 .log
 
 
+### include shell script
+!/kafka/new_shell.sh
+!/kafka/*.sh
+!/spark/*.sh
