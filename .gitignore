@@ -1,7 +1,7 @@
 ### kafka and spark
 apache-maven-3.3.9/
-kafka/
-spark/
+kafka/*
+spark/*
 
 ### mvn package file
 First_app/target/
@@ -22,7 +22,6 @@ Session.vim
 .log
 
 
-### include shell script
-!/kafka/new_shell.sh
-!/kafka/*.sh
-!/spark/*.sh
+### exclude shell script
+!kafka/*.sh
+!spark/*.sh
