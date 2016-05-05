@@ -5,6 +5,7 @@ spark/*
 
 ### mvn package file
 First_app/target/
+logax/target/
 
 ### all the jar file
 .jar

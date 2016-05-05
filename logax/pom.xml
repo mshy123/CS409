@@ -76,6 +76,7 @@
 		<version>2.2</version>
 		<configuration>
 		  <path>/${project.artifactId}</path>
+		  <forkMode>never</forkMode>
 		</configuration>
 	  </plugin>
     </plugins>

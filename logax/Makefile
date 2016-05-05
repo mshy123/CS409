@@ -2,7 +2,7 @@ build:
 	mvn compile && mvn package
 
 run:
-	mvn tomcat:run-war
+	mvn tomcat7:run-war
 
 clean:
 	rm -rf target
