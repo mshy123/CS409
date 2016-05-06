@@ -11,7 +11,7 @@ import org.springframework.ui.ModelMap;
 @Controller
 public class HelloUser
 {
-	@RequestMapping(value = "/greeting/{userid}", method = RequestMethod.GET)
+	@RequestMapping(value = "/{userid}", method = RequestMethod.GET)
 	public ModelAndView user(@PathVariable(value="userid") String id)
 	{
 		ModelAndView model = new ModelAndView();
