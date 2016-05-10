@@ -41,6 +41,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import com.mycompany.app.Rule.resultCode;
+
 import scala.Tuple2;
 
 /**
@@ -72,7 +74,7 @@ public class App {
     
     currentRules = new ArrayList<Rule>();
 
-    JSONParser parser = new JSONParser();
+    final JSONParser parser = new JSONParser();
 	try {
 		Object obj = parser.parse(new FileReader("Rule.json"));
 		
@@ -97,6 +99,7 @@ public class App {
 					types);
 			currentRules.add(Rule);
 		}
+		
 	} catch (FileNotFoundException e) {
 		e.printStackTrace();
 	} catch (IOException e) {
@@ -105,7 +108,7 @@ public class App {
 		e.printStackTrace();
 	}
 	
-	System.out.println(currentRules.size());
+	final long baseRuleSize = currentRules.size();
     
     SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount");
     // Create the context with 2 seconds batch size
@@ -129,13 +132,59 @@ public class App {
 
     final JavaRDD<Rule> rulesRDD = jssc.sparkContext().parallelize(currentRules);
     
-    JavaPairDStream<String, Rule> typeRulePair = lines.transformToPair(
+    JavaPairDStream<String, Rule> typeRulePairDStream = lines.transformToPair(
     		new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
     			public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
     				return t.cartesian(rulesRDD);
     			}
     		});
-
+   
+    JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.map(
+    		new Function<Tuple2<String, Rule>, Rule> () {
+				public Rule call(Tuple2<String, Rule> v1) {
+					// TODO Auto-generated method stub
+					resultCode result = resultCode.FAIL;
+					Rule rule = v1._2;
+					Tuple type = null;
+					try {
+						Object obj = parser.parse(v1._1);
+						JSONObject packet = (JSONObject) obj;
+						type = new Tuple (packet.get("content").toString(), 
+												packet.get("name").toString());
+						result = rule.check(type);
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+					
+					if (type == null) return null;
+					
+					switch (result) {
+						case UPDATE:
+							if (rule.isBase()) {
+								rule.update(type);
+								currentRules.add(rule);
+							}
+							else {
+								// find rule from currentRules
+								// remove it and add new rule updated
+							}
+							
+						case FAIL:
+							return rule;
+						case TIMEOVER:
+							//remove rule;
+							return null;
+						case COMPLETE:
+							// operation on complete rule
+							// save to DB or sth
+							// remove rule;
+							return null;
+					}
+					
+					return null;
+				}
+    		});
+    
     
 //    JavaDStream<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
 //      public Iterable<String> call(String x) {
@@ -155,7 +204,7 @@ public class App {
 //      });
     
 //    lines.print();
-    typeRulePair.print();
+    typeRulePairDStream.print();
 //    wordCounts.print();
     jssc.start();
     jssc.awaitTermination();
