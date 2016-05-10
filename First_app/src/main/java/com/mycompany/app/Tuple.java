@@ -1,4 +1,4 @@
-package cs_project;
+package com.mycompany.app;
 
 public class Tuple {
 	public String typeName;

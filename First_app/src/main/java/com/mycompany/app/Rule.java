@@ -1,4 +1,4 @@
-package cs_project;
+package com.mycompany.app;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -9,9 +9,9 @@ public class Rule {
 	
 	private long birthTime;
 	
-	private int duration;
+	private long duration;
 	
-	private ArrayList<Tuple> types;
+	private ArrayList<String> types;
 	
 	private ArrayList<String> checkedTypes;
 	
@@ -19,10 +19,11 @@ public class Rule {
 	
 	private ArrayList<String> attributeList;
 	
-	public Rule( String name_ , int duration_ , Boolean ordered_ ) {
+	public Rule( String name_ , long duration_ , Boolean ordered_, ArrayList<String> types_) {
 		name = name_;
 		duration = duration_;
 		ordered = ordered_;
+		types = types_;
 	}
 	
 	public Boolean check( Rule rule1) {
