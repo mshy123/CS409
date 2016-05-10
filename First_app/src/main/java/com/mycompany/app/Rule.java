@@ -98,4 +98,8 @@ public class Rule implements Serializable{
 	public Boolean checkComplete() {
 		return checkedTypes.size() == types.size();
 	}
+	
+	public Boolean isBase() {
+		return checkedTypes.size() == 0;
+	}
 }
