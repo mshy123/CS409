@@ -63,23 +63,30 @@ public class Rule implements Serializable{
 				}
 			}
 		} else {
-			if( types.contains( type.typeName ) && !checkedTypes.contains( type.typeName ) ) {
-				if( attributeList.size() == 0 ) {
-					return resultCode.UPDATE;
-				} else {
-					JSONParser parser = new JSONParser();
-					try {
-						JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
-						JSONObject targetJson = (JSONObject)parser.parse(type.content);
-						for( int i = 0 ; i < attributeList.size() ; i ++ ) {
-							if( targetJson.get(attributeList.get(i)).toString() 
-									!= compareJson.get(attributeList.get(i)).toString() ){
-								return resultCode.FAIL;
-							}
+			for( int j = 0; j < types.size(); j++ ) {
+				if( types.get(j).typeName == type.typeName ) {
+					for( int k = 0; k < checkedTypes.size(); k++ ) {
+						if( checkedTypes.get(k).typeName == type.typeName ) {
+							return resultCode.FAIL;
 						}
+					}
+					if( attributeList.size() == 0 ) {
 						return resultCode.UPDATE;
-					} catch (ParseException e) {
-						e.printStackTrace();
+					} else {
+						JSONParser parser = new JSONParser();
+						try {
+							JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
+							JSONObject targetJson = (JSONObject)parser.parse(type.content);
+							for( int i = 0 ; i < attributeList.size() ; i ++ ) {
+								if( targetJson.get(attributeList.get(i)).toString() 
+										!= compareJson.get(attributeList.get(i)).toString() ){
+									return resultCode.FAIL;
+								}
+							}
+							return resultCode.UPDATE;
+						} catch (ParseException e) {
+							e.printStackTrace();
+						}
 					}
 				}
 			}
