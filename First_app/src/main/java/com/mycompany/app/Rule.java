@@ -1,7 +1,7 @@
 package com.mycompany.app;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Date;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -9,7 +9,7 @@ import org.json.simple.parser.ParseException;
 
 import scala.util.parsing.json.JSON;
 
-public class Rule {
+public class Rule implements Serializable{
 	
 	private String name;
 	
@@ -88,10 +88,14 @@ public class Rule {
 	 }
 	
 	public void update( Tuple type ) {
-		//updat 할 때 쳌트 타입스에 하나도 없으면 벌스타임을 추가하면 될듯?
 		if( checkedTypes.isEmpty() ) {
 			birthTime = System.currentTimeMillis();
 		}
 		checkedTypes.add(type);
 	}	
+
+	
+	public Boolean checkComplete() {
+		return checkedTypes.size() == types.size();
+	}
 }
