@@ -32,10 +32,11 @@ public class Rule implements Serializable{
 		duration = duration_;
 		ordered = ordered_;
 		types = types_;
+		birthTime = 0;
 	}
 	
 	public resultCode check( Tuple type) {
-		if( System.currentTimeMillis() < birthTime + duration ) {
+		if( System.currentTimeMillis() > birthTime + duration ) {
 			return resultCode.TIMEOVER;
 		}
 		if( checkedTypes.size() == types.size() ) {
