@@ -1,0 +1,14 @@
+<source>
+  @type tail
+  format <how>?% !@@#$ \nn asdffgg
+  path ///asd
+  pos_file ggger
+  tag high
+</source>
+<source>
+  @type tail
+  format <how>?% !@@#$ \nn asdffgg
+  path ///asd
+  pos_file gggerㅆㅅ
+  tag high
+</source>
