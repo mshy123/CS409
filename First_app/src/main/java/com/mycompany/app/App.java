@@ -176,13 +176,13 @@ public class App {
 							return rule;
 						case TIMEOVER:
 							//remove rule;
-							rule.removeFrom(currentRules);
+							currentRules = rule.removeFrom(currentRules);
 							return null;
 						case COMPLETE:
 							// operation on complete rule
 							// save to DB or sth
 							// remove rule;
-							rule.removeFrom(currentRules);
+							currentRules = rule.removeFrom(currentRules);
 							return null;
 					}
 					
