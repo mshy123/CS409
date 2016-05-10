@@ -11,4 +11,5 @@ public class Tuple implements Serializable {
 		content = content_;
 		time = System.currentTimeMillis();
 	}
+	
 }
