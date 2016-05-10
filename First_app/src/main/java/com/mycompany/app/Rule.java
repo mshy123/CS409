@@ -1,9 +1,9 @@
 package com.mycompany.app;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Date;
 
-public class Rule {
+public class Rule implements Serializable{
 	
 	private String name;
 	
@@ -48,6 +48,6 @@ public class Rule {
 	}	
 	
 	public Boolean checkComplete() {
-		return checkedTypes.size == types.size();
+		return checkedTypes.size() == types.size();
 	}
 }

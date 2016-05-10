@@ -1,6 +1,8 @@
 package com.mycompany.app;
 
-public class Tuple {
+import java.io.Serializable;
+
+public class Tuple implements Serializable {
 	public String typeName;
 	public String content;
 	public Tuple( String typeName_ , String content_ ) {

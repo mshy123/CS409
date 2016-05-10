@@ -1,0 +1,14 @@
+{"Rule":
+	[
+		{"name":"rule1", "duration":10, "ordered":true, "types": 
+			[
+				{"name":"type1", "content":"0-9a-z"},
+				{"name":"type2", "content":"a-z0-9"}
+			]},
+		{"name":"rule2", "duration":5, "ordered":false, "types": 
+			[
+				{"name":"type1", "content":"0-9a-z"},
+				{"name":"type2", "content":"a-z0-9"}
+			]}
+	]
+}

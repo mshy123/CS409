@@ -27,9 +27,12 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -81,10 +84,11 @@ public class App {
 			JSONObject jsonRule = (JSONObject) rule;
 			
 			JSONArray jsonTypes = (JSONArray) jsonRule.get("types");
-			ArrayList<String> types = new ArrayList<String>();
+			ArrayList<Tuple> types = new ArrayList<Tuple>();
 			
 			for (Object type : jsonTypes) {
-				types.add((String) ((JSONObject) type).get("name"));
+				types.add(new Tuple ((String) ((JSONObject) type).get("name"),
+						(String) ((JSONObject) type).get("content")));
 			}
 			
 			Rule Rule = new Rule ((String) jsonRule.get("name"),
@@ -123,6 +127,16 @@ public class App {
       }
     });
 
+    final JavaRDD<Rule> rulesRDD = jssc.sparkContext().parallelize(currentRules);
+    
+    JavaPairDStream<String, Rule> typeRulePair = lines.transformToPair(
+    		new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
+    			public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
+    				return t.cartesian(rulesRDD);
+    			}
+    		});
+
+    
 //    JavaDStream<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
 //      public Iterable<String> call(String x) {
 //        return Lists.newArrayList(SPACE.split(x));
@@ -140,7 +154,8 @@ public class App {
 //        }
 //      });
     
-    lines.print();
+//    lines.print();
+    typeRulePair.print();
 //    wordCounts.print();
     jssc.start();
     jssc.awaitTermination();
