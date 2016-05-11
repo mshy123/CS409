@@ -11,14 +11,14 @@ Ext.define('logax.store.NavigationTree', {
 		expanded: true,
 		children: [
 			{
-				text: 'Dashboard Change',
+				text: 'Make Type',
 				iconCls: 'x-fa fa-desktop',
 				viewType: 'dashboard',
 				routeId: 'dashboard',
 				leaf: true
 			},
 			{
-				text: 'Profile',
+				text: 'Will be added..',
 				iconCls: 'x-fa fa-user',
 				viewType: 'profile',
 				leaf: true
