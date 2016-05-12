@@ -49,8 +49,8 @@ Ext.define('logax.view.dashboard.Type', {
 					var jobStatus = "running";
 					var jsonRequest = 
 					{
-						"typeName":Ext.getCmp('typename').getValue(),
-						"typeRegex":Ext.getCmp('typeregex').getValue(),
+						"typename":Ext.getCmp('typename').getValue(),
+						"typeregex":Ext.getCmp('typeregex').getValue(),
 						"priority":Ext.getCmp('priority').getValue(),
 						"path":Ext.getCmp('path').getValue(),
 						"pos_file":Ext.getCmp('pos_file').getValue()

@@ -46,10 +46,26 @@ public class LogaxController
 			return "{\"error\":\"bad request\"}";
 		}
 
+		request.sendDB();
+
 		FileWriter writer = null;
 		try	{
-			writer = new FileWriter("/Users/hyunhoha/LocalCEP/example.txt", true);
+			writer = new FileWriter("/Users/hyunhoha/LocalCEP/example.txt");
 			request.print(writer);
+			/* this is for dbtest */
+			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			JSONArray jarr = DBClient.getTypeList();
+			for (int i = 0; i < jarr.size(); i++)
+			{
+				JSONObject job = (JSONObject)jarr.get(i);
+				writer.write("typename:" + (String)job.get("typename") + "\n");
+				writer.write("typeregex:" + (String)job.get("typeregex") + "\n");
+				writer.write("priority:" + (String)job.get("priority") + "\n");
+				writer.write("path:" + (String)job.get("path") + "\n");
+				writer.write("pos_file:" + (String)job.get("pos_file") + "\n");
+			}
+			writer.flush();
+			writer.close();
 		}
 		catch(IOException e)
 		{

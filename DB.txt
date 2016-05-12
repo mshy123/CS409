@@ -1,0 +1,10 @@
+typename:how
+typeregex:when
+priority:you
+path:whey
+pos_file:why
+typename:how1
+typeregex:when2
+priority:you5
+path:whey3
+pos_file:4why

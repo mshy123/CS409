@@ -9,16 +9,16 @@ import java.io.*;
 
 public class ExecuteRequest
 {
-	private String typeName;
-	private String typeRegex;
+	private String typename;
+	private String typeregex;
 	private String priority;
 	private String path;
 	private String pos_file;
 
 	public ExecuteRequest()
 	{
-		typeName = null;
-		typeRegex = null;
+		typename = null;
+		typeregex = null;
 		priority = null;
 		path = null;
 		pos_file = null;
@@ -28,20 +28,26 @@ public class ExecuteRequest
 	{
 		writer.write("<source>\n");
 		writer.write("  @type tail\n");
-		writer.write("  format " + typeRegex + "\n");
+		writer.write("  format " + typeregex + "\n");
 		writer.write("  path " + path + "\n");
 		writer.write("  pos_file " + pos_file + "\n");
-		writer.write("  tag " + priority + "\n");
+		writer.write("  tag " + priority + "." + typename + "\n");
 		writer.write("</source>" + "\n");
 		writer.flush();
 		writer.close();
 	}
+
+	public void sendDB()
+	{
+		DBClient.addType(typename, typeregex, priority, path, pos_file);
+	}
+
 	public void parse(JSONObject jsonObject) throws JsonTypeException
 	{
 		SafeJson json = new SafeJson(jsonObject);
 
-		this.typeName = json.getString("typeName");
-		this.typeRegex = json.getString("typeRegex");
+		this.typename = json.getString("typename");
+		this.typeregex = json.getString("typeregex");
 		this.priority = json.getString("priority");
 		this.path = json.getString("path");
 		this.pos_file = json.getString("pos_file");
