@@ -167,17 +167,22 @@ public class App {
 							else {
 								// find rule from currentRules
 								// remove it and add new rule updated
+								currentRules = rule.removeFrom(currentRules);
+								rule.update(type);
+								currentRules.add(rule);
 							}
-							
+							return rule;
 						case FAIL:
 							return rule;
 						case TIMEOVER:
 							//remove rule;
+							currentRules = rule.removeFrom(currentRules);
 							return null;
 						case COMPLETE:
 							// operation on complete rule
 							// save to DB or sth
 							// remove rule;
+							currentRules = rule.removeFrom(currentRules);
 							return null;
 					}
 					

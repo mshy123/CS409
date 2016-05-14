@@ -110,4 +110,14 @@ public class Rule implements Serializable{
 	public Boolean isBase() {
 		return checkedTypes.size() == 0;
 	}
+	
+	public ArrayList<Rule> removeFrom (ArrayList<Rule> rules) {
+		for (Rule rule : rules) {
+			if (rule.name.equals(this.name) && rule.birthTime == this.birthTime) {
+				rules.remove(rule);
+				break;
+			}
+		}
+		return rules;
+	}
 }
