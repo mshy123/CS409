@@ -1,7 +1,7 @@
 <source>
   @type tail
-  format when2
-  path whey3
-  pos_file 4why
-  tag you5.how1
+  format asg
+  path fh
+  pos_file gw
+  tag qe.asdf
 </source>

@@ -46,7 +46,64 @@ public class LogaxController
 			return "{\"error\":\"bad request\"}";
 		}
 
-		request.sendDB();
+		if (request.addDBType() == -1)
+		{
+			return "{\"error\":\"Type name is already exist\"}";
+		}
+
+		FileWriter writer = null;
+		try	{
+			writer = new FileWriter("/Users/hyunhoha/LocalCEP/example.txt");
+			request.print(writer);
+			/* this is for dbtest */
+			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			JSONArray jarr = DBClient.getTypeList();
+			for (int i = 0; i < jarr.size(); i++)
+			{
+				JSONObject job = (JSONObject)jarr.get(i);
+				writer.write("typename:" + (String)job.get("typename") + "\n");
+				writer.write("typeregex:" + (String)job.get("typeregex") + "\n");
+				writer.write("priority:" + (String)job.get("priority") + "\n");
+				writer.write("path:" + (String)job.get("path") + "\n");
+				writer.write("pos_file:" + (String)job.get("pos_file") + "\n");
+			}
+			writer.flush();
+			writer.close();
+		}
+		catch(IOException e)
+		{
+			return "{\"error\":\"Bad file out\"}";
+		}
+		return "{\"error\":\"null\"}";
+	}
+
+	@RequestMapping(value = "/delete", method = RequestMethod.POST)
+	@ResponseBody
+	public String deleteType(@RequestBody String requestString)
+	{
+		JSONParser parser = new JSONParser();
+		JSONObject json = null;
+		try
+		{
+			json = (JSONObject)parser.parse(requestString);
+		}
+		catch(ParseException e)
+		{
+			return "{\"error\":\"bad request\"}";
+		}
+
+		ExecuteRequest request = new ExecuteRequest();
+		
+		try
+		{
+			request.parse(json);
+		}
+		catch(JsonTypeException e)
+		{
+			return "{\"error\":\"bad request\"}";
+		}
+
+		request.removeDBType();
 
 		FileWriter writer = null;
 		try	{

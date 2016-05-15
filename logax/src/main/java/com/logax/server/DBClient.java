@@ -47,7 +47,7 @@ public class DBClient
 		}
 	}
 
-	public static void addType(String typename, String typeregex, String priority, String path, String pos_file)
+	public static int addType(String typename, String typeregex, String priority, String path, String pos_file)
 	{
 		init();
 		Document type = new Document()
@@ -56,7 +56,27 @@ public class DBClient
 			.append("priority", priority)
 			.append("path", path)
 			.append("pos_file", pos_file);
+		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
+		for (Document document : iterable)
+		{
+			return -1;
+		}
 		db.getCollection("type").insertOne(type);
+		return 0;
+	}
+	
+	public static void removeType(String typename)
+	{
+		init();
+
+		db.getCollection("type").deleteMany(new Document("typename", typename));
+	}
+
+	public static void removeAll()
+	{
+		init();
+
+		db.getCollection("type").deleteMany(new Document());
 	}
 
 	public static JSONArray getTypeList()

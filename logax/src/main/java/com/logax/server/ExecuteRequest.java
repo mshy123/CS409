@@ -37,9 +37,14 @@ public class ExecuteRequest
 		writer.close();
 	}
 
-	public void sendDB()
+	public int addDBType()
 	{
-		DBClient.addType(typename, typeregex, priority, path, pos_file);
+		return DBClient.addType(typename, typeregex, priority, path, pos_file);
+	}
+
+	public void removeDBType()
+	{
+		DBClient.removeType(typename);
 	}
 
 	public void parse(JSONObject jsonObject) throws JsonTypeException

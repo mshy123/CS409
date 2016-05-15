@@ -63,7 +63,42 @@ Ext.define('logax.view.dashboard.Type', {
 						success:function(result, request){
 							jobId = Ext.JSON.decode(result.responseText);
 							me.jobID = jobId.jobid;
-							Ext.Msg.alert("Success", "Algorithm is running: " + me.jobID);
+							Ext.Msg.alert("Success", "Add Type Name " + Ext.getCmp('typename').getValue());
+							//me.onJobFinish();
+						},
+						failure:function(result, request){
+									Ext.Msg.alert("Failed");
+								}
+					});
+				}
+			},
+
+			{
+				xtype: 'button',
+				text: 'Delete',
+				handler: function() {
+					var me = this;
+					var jsonResult;
+					var jobId;
+					var jsonStatus;
+					var jobStatus = "running";
+					var jsonRequest = 
+					{
+						"typename":Ext.getCmp('typename').getValue(),
+						"typeregex":Ext.getCmp('typeregex').getValue(),
+						"priority":Ext.getCmp('priority').getValue(),
+						"path":Ext.getCmp('path').getValue(),
+						"pos_file":Ext.getCmp('pos_file').getValue()
+					};
+					Ext.Ajax.request({
+						url:"api/delete",
+						method:"POST",
+						jsonData: jsonRequest,
+
+						success:function(result, request){
+							jobId = Ext.JSON.decode(result.responseText);
+							me.jobID = jobId.jobid;
+							Ext.Msg.alert("Success", "Delete Type Name " + Ext.getCmp('typename').getValue());
 							//me.onJobFinish();
 						},
 						failure:function(result, request){
