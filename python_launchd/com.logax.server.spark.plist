@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>KeepAlive</key>
+	<false/>
+	<key>Label</key>
+	<string>com.logax.server.spark</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/hyunhoha/LocalCEP/spark/bin/spark-submit</string>
+		<string>--class</string>
+		<string>"com.mycompany.app.App"</string>
+		<string>--jars</string>
+		<string>First_app-1.0-SNAPSHOT-jar-with-dependencies.jar</string>
+		<string>First_app-1.0-SNAPSHOT.jar</string>
+		<string>127.0.0.1:2181</string>
+		<string>01</string>
+		<string>apache_access_topic,syslog_topic</string>
+		<string>1</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+</dict>
+</plist>
