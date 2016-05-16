@@ -26,3 +26,4 @@ Session.vim
 ### exclude shell script
 !kafka/*.sh
 !spark/*.sh
+.DS_Store
