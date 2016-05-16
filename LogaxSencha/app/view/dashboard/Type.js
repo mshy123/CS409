@@ -2,7 +2,11 @@ Ext.define('logax.view.dashboard.Type', {
 	extend: 'Ext.panel.Panel',
 	xtype: 'dashboardform',
 	
-	bodyPadding: '10',
+	requires: [
+		'Ext.form.*'
+	],
+	
+bodyPadding: '10',
 	layout: 'fit',
 	
 	items: [{
@@ -33,10 +37,26 @@ Ext.define('logax.view.dashboard.Type', {
 				allowBlank: false
 			},
 			{
-				xtype: 'textfield',
-				id: 'priority',
-				fieldLabel: 'Priority',
-				allowBlank: false
+				xtype      : 'fieldcontainer',
+				fieldLabel : 'Priority',
+				defaultType: 'radiofield',
+				defaults: {
+					flex: 1
+				},
+				layout: 'hbox',
+				items: [
+					{
+						boxLabel  : 'High',
+						name      : 'priority',
+						inputValue: 'high',
+						id        : 'high'
+					}, {
+						boxLabel  : 'Low',
+						name      : 'priority',
+						inputValue: 'low',
+						id        : 'low'
+					}
+				]
 			},
 			{
 				xtype: 'button',
@@ -47,14 +67,14 @@ Ext.define('logax.view.dashboard.Type', {
 					var jobId;
 					var jsonStatus;
 					var jobStatus = "running";
-					var jsonRequest = 
-					{
-						"typename":Ext.getCmp('typename').getValue(),
-						"typeregex":Ext.getCmp('typeregex').getValue(),
-						"priority":Ext.getCmp('priority').getValue(),
-						"path":Ext.getCmp('path').getValue(),
-						"pos_file":Ext.getCmp('pos_file').getValue()
-					};
+					var	jsonRequest =
+						{
+							"typename":Ext.getCmp('typename').getValue(),
+							"typeregex":Ext.getCmp('typeregex').getValue(),
+							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
+							"path":Ext.getCmp('path').getValue(),
+							"pos_file":Ext.getCmp('pos_file').getValue()
+						};
 					Ext.Ajax.request({
 						url:"api/execute",
 						method:"POST",

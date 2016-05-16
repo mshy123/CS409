@@ -12,7 +12,7 @@ Ext.define('logax.view.dashboard.Dashboard', {
 	items: [
 		{		
 			xtype: 'dashboardform',
-            userCls: 'big-100 small-100 shadow'
+            userCls: 'big-50 small-100 shadow'
 	    }
     ]
 /*

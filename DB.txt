@@ -3,3 +3,8 @@ typeregex:as
 priority:q
 path:f
 pos_file:g
+typename:
+typeregex:
+priority:high
+path:
+pos_file:
