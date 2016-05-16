@@ -74,8 +74,9 @@ public class App {
     
     currentRules = new ArrayList<Rule>();
 
-    final JSONParser parser = new JSONParser();
+    
 	try {
+		final JSONParser parser = new JSONParser();
 		Object obj = parser.parse(new FileReader("Rule.json"));
 		
 		JSONObject jsonObject = (JSONObject) obj;
@@ -147,6 +148,8 @@ public class App {
 					Rule rule = v1._2;
 					Tuple type = null;
 					try {
+						//{"content":"{\"host\":\"127.0.0.1\",\"user\":\"-\",\"path\":\"/login.php\",\"code\":\"201\",\"size\":\"2691\"}","type":"high.apachepost","time":1463365885}
+						final JSONParser parser = new JSONParser();
 						Object obj = parser.parse(v1._1);
 						JSONObject packet = (JSONObject) obj;
 						type = new Tuple (packet.get("content").toString(), 
@@ -179,10 +182,9 @@ public class App {
 							currentRules = rule.removeFrom(currentRules);
 							return null;
 						case COMPLETE:
-							// operation on complete rule
-							// save to DB or sth
 							// remove rule;
 							currentRules = rule.removeFrom(currentRules);
+							// operation on complete rule including saving to DB
 							return null;
 					}
 					

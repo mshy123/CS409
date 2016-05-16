@@ -7,8 +7,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import scala.util.parsing.json.JSON;
-
 public class Rule implements Serializable{
 	
 	private String name;
