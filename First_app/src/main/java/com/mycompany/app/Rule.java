@@ -36,11 +36,11 @@ public class Rule implements Serializable{
 	}
 	
 	public resultCode check( Tuple type) {
+		if( checkedTypes.size() == types.size() ) {
+			 return resultCode.COMPLETE;
+		}
 		if( System.currentTimeMillis() > birthTime + duration ) {
 			return resultCode.TIMEOVER;
-		}
-		if( checkedTypes.size() == types.size() ) {
-		 return resultCode.COMPLETE;
 		}
 		if( ordered) {
 			if( type.typeName == types.get( checkedTypes.size() ).typeName ) {
@@ -64,13 +64,16 @@ public class Rule implements Serializable{
 				}
 			}
 		} else {
-			for( int j = 0; j < types.size(); j++ ) {
-				if( types.get(j).typeName == type.typeName ) {
-					for( int k = 0; k < checkedTypes.size(); k++ ) {
-						if( checkedTypes.get(k).typeName == type.typeName ) {
-							return resultCode.FAIL;
-						}
+			ArrayList<Tuple> temp = types;
+			for( int i = 0; i < types.size(); i++ ) {
+				for( int j = 0; j < checkedTypes.size(); j++ ) {
+					if( types.get(i).typeName == checkedTypes.get(j).typeName ) {
+						temp.remove(i);
 					}
+				}
+			}
+			for( int i = 0; i < temp.size(); i++ ) {
+				if( temp.get(i).typeName == type.typeName ) {
 					if( attributeList.size() == 0 ) {
 						return resultCode.UPDATE;
 					} else {
@@ -78,9 +81,9 @@ public class Rule implements Serializable{
 						try {
 							JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
 							JSONObject targetJson = (JSONObject)parser.parse(type.content);
-							for( int i = 0 ; i < attributeList.size() ; i ++ ) {
-								if( targetJson.get(attributeList.get(i)).toString() 
-										!= compareJson.get(attributeList.get(i)).toString() ){
+							for( int j = 0 ; j < attributeList.size() ; j++ ) {
+								if( targetJson.get(attributeList.get(j)).toString() 
+										!= compareJson.get(attributeList.get(j)).toString() ){
 									return resultCode.FAIL;
 								}
 							}

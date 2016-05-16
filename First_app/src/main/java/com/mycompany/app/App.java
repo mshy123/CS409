@@ -90,7 +90,13 @@ public class App {
 			
 			for (Object type : jsonTypes) {
 				types.add(new Tuple ((String) ((JSONObject) type).get("name"),
-						(String) ((JSONObject) type).get("content")));
+						Integer.parseInt((String) ((JSONObject) type).get("number"))));
+			}
+			JSONArray jsonAttributes = (JSONArray) jsonRule.get("attributes");
+			ArrayList<String> attributes = new ArrayList<String>();
+			
+			for (Object attribute : jsonAttributes) {
+				attributes.add((String) attribute);
 			}
 			
 			Rule Rule = new Rule ((String) jsonRule.get("name"),

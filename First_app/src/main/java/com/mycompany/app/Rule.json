@@ -2,13 +2,17 @@
 	[
 		{"name":"rule1", "duration":10, "ordered":true, "types": 
 			[
-				{"name":"type1", "content":"0-9a-z"},
-				{"name":"type2", "content":"a-z0-9"}
-			]},
+				{"name":"type1", "number":"2"},
+				{"name":"type2", "number":"1"}
+			]
+			"attributes":
+			[]},
 		{"name":"rule2", "duration":5, "ordered":false, "types": 
 			[
-				{"name":"type1", "content":"0-9a-z"},
-				{"name":"type2", "content":"a-z0-9"}
-			]}
+				{"name":"type1", "number":"1"},
+				{"name":"type2", "number":"2"}
+			]
+			"attributes":
+			["host"]}
 	]
 }
