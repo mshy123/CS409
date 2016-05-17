@@ -45,32 +45,75 @@ public class LogaxController
 		{
 			return "{\"error\":\"bad request\"}";
 		}
-
+		/* add DB */
 		if (request.addDBType() == -1)
 		{
 			return "{\"error\":\"Type name is already exist\"}";
 		}
 
 		FileWriter writer = null;
-		try	{
-			writer = new FileWriter("/Users/hyunhoha/LocalCEP/example.txt");
-			request.print(writer);
-			/* this is for dbtest */
+		try	{	
+			/* Stop the core process */
+			CoreController.stopCore();
+			/* Edit fluentd File : type */
 			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
 			JSONArray jarr = DBClient.getTypeList();
 			for (int i = 0; i < jarr.size(); i++)
 			{
 				JSONObject job = (JSONObject)jarr.get(i);
-				writer.write("typename:" + (String)job.get("typename") + "\n");
-				writer.write("typeregex:" + (String)job.get("typeregex") + "\n");
-				writer.write("priority:" + (String)job.get("priority") + "\n");
-				writer.write("path:" + (String)job.get("path") + "\n");
-				writer.write("pos_file:" + (String)job.get("pos_file") + "\n");
+				try {
+					request.parse(job);
+				}
+				catch (JsonTypeException e)
+				{
+					return "{\"error\":\"bad request\"}";
+				}
+				request.print(writer);
 			}
+			/* Edit fluentd File : Add type tag */
+			writer.write("<filter **>\n");
+			writer.write("  @type record_transformer\n");
+			writer.write("  enable_ruby true\n");
+			writer.write("  renew_record true\n");
+			writer.write("  <record>\n");
+			writer.write("    content ${record.to_json}\n");
+			writer.write("    type ${tag}\n");
+			writer.write("  </record>\n</filter>\n\n");
+
+			/* Edit fluentd send to kafka */
+			writer.write("<match high.**>\n");
+	      	writer.write("  @type               kafka\n");
+	        writer.write("  brokers             127.0.0.1:9092\n");
+		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  output_include_time true\n</match>\n\n");
+			writer.write("<match low.**>\n");
+	      	writer.write("  @type               kafka\n");
+	        writer.write("  brokers             127.0.0.1:9092\n");
+		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.flush();
 			writer.close();
+			CoreController.startCore();
 		}
 		catch(IOException e)
+		{
+			return "{\"error\":\"Bad file out\"}";
+		}
+		
+		return "{\"error\":\"null\"}";
+	}
+
+	@RequestMapping(value = "/deleteall", method = RequestMethod.POST)
+	@ResponseBody
+	public String deleteAllType(@RequestBody String requestString)
+	{
+		DBClient.removeAll();
+		try
+		{
+			FileWriter writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			writer.close();
+		}
+		catch (IOException e)
 		{
 			return "{\"error\":\"Bad file out\"}";
 		}
@@ -107,22 +150,47 @@ public class LogaxController
 
 		FileWriter writer = null;
 		try	{
-			writer = new FileWriter("/Users/hyunhoha/LocalCEP/example.txt");
-			request.print(writer);
-			/* this is for dbtest */
+			/* Stop the core process */
+			CoreController.stopCore();
+			/* Edit fluentd File : type */
 			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
 			JSONArray jarr = DBClient.getTypeList();
 			for (int i = 0; i < jarr.size(); i++)
 			{
 				JSONObject job = (JSONObject)jarr.get(i);
-				writer.write("typename:" + (String)job.get("typename") + "\n");
-				writer.write("typeregex:" + (String)job.get("typeregex") + "\n");
-				writer.write("priority:" + (String)job.get("priority") + "\n");
-				writer.write("path:" + (String)job.get("path") + "\n");
-				writer.write("pos_file:" + (String)job.get("pos_file") + "\n");
+				try {
+					request.parse(job);
+				}
+				catch (JsonTypeException e)
+				{
+					return "{\"error\":\"bad request\"}";
+				}
+				request.print(writer);
 			}
+			/* Edit fluentd File : Add type tag */
+			writer.write("<filter **>\n");
+			writer.write("  @type record_transformer\n");
+			writer.write("  enable_ruby true\n");
+			writer.write("  renew_record true\n");
+			writer.write("  <record>\n");
+			writer.write("    content ${record.to_json}\n");
+			writer.write("    type ${tag}\n");
+			writer.write("  </record>\n</filter>\n\n");
+
+			/* Edit fluentd send to kafka */
+			writer.write("<match high.**>\n");
+	      	writer.write("  @type               kafka\n");
+	        writer.write("  brokers             127.0.0.1:9092\n");
+		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  output_include_time true\n</match>\n\n");
+			writer.write("<match low.**>\n");
+	      	writer.write("  @type               kafka\n");
+	        writer.write("  brokers             127.0.0.1:9092\n");
+		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.flush();
 			writer.close();
+			CoreController.startCore();
 		}
 		catch(IOException e)
 		{

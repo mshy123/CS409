@@ -13,7 +13,6 @@ public class ExecuteRequest
 	private String typeregex;
 	private String priority;
 	private String path;
-	private String pos_file;
 
 	public ExecuteRequest()
 	{
@@ -21,7 +20,6 @@ public class ExecuteRequest
 		typeregex = null;
 		priority = null;
 		path = null;
-		pos_file = null;
 	}
 
 	public void print(FileWriter writer) throws IOException
@@ -30,16 +28,15 @@ public class ExecuteRequest
 		writer.write("  @type tail\n");
 		writer.write("  format " + typeregex + "\n");
 		writer.write("  path " + path + "\n");
-		writer.write("  pos_file " + pos_file + "\n");
+		writer.write("  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/" + typename + "\n");
 		writer.write("  tag " + priority + "." + typename + "\n");
-		writer.write("</source>" + "\n");
-		writer.flush();
-		writer.close();
+		writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
+		writer.write("</source>" + "\n\n");
 	}
 
 	public int addDBType()
 	{
-		return DBClient.addType(typename, typeregex, priority, path, pos_file);
+		return DBClient.addType(typename, typeregex, priority, path);
 	}
 
 	public void removeDBType()
@@ -55,6 +52,5 @@ public class ExecuteRequest
 		this.typeregex = json.getString("typeregex");
 		this.priority = json.getString("priority");
 		this.path = json.getString("path");
-		this.pos_file = json.getString("pos_file");
 	}
 }

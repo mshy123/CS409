@@ -1,10 +1,42 @@
-typename:asdfg
-typeregex:as
-priority:q
-path:f
-pos_file:g
-typename:
-typeregex:
-priority:high
-path:
-pos_file:
+<source>
+  @type tail
+  format fff
+  path eee
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/ddd
+  tag high.ddd
+  time_format %d/%b/%Y:%H:%M:%S %z
+</source>
+
+<source>
+  @type tail
+  format wow
+  path idontknow
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/hyunho
+  tag high.hyunho
+  time_format %d/%b/%Y:%H:%M:%S %z
+</source>
+
+<filter **>
+  @type record_transformer
+  enable_ruby true
+  renew_record true
+  <record>
+    content ${record.to_json}
+    type ${tag}
+  </record>
+</filter>
+
+<match high.**>
+  @type               kafka
+  brokers             127.0.0.1:9092
+  default_topic       apache_error_topic
+  output_include_time true
+</match>
+
+<match low.**>
+  @type               kafka
+  brokers             127.0.0.1:9092
+  default_topic       apache_error_topic
+  output_include_time true
+</match>
+

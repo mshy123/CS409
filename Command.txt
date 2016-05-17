@@ -1,0 +1,5 @@
+zkserver start
+zkserver stop
+kafka-server-start /usr/local/etc/kafka/server.properties
+kafka-server-stop
+kafka-topic

@@ -28,7 +28,6 @@ class ArrayBlock implements Block<Document>
 		type.put("typeregex", document.getString("typeregex"));
 		type.put("priority", document.getString("priority"));
 		type.put("path", document.getString("path"));
-		type.put("pos_file", document.getString("pos_file"));
 		array.add(type);
 	}
 }
@@ -47,15 +46,14 @@ public class DBClient
 		}
 	}
 
-	public static int addType(String typename, String typeregex, String priority, String path, String pos_file)
+	public static int addType(String typename, String typeregex, String priority, String path)
 	{
 		init();
 		Document type = new Document()
 			.append("typename", typename)
 			.append("typeregex", typeregex)
 			.append("priority", priority)
-			.append("path", path)
-			.append("pos_file", pos_file);
+			.append("path", path);
 		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
 		for (Document document : iterable)
 		{

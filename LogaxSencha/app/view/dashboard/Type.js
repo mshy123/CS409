@@ -31,17 +31,12 @@ bodyPadding: '10',
 				allowBlank: false
 			},
 			{
-				xtype: 'textfield',
-				id: 'pos_file',
-				fieldLabel: 'Pos_file',
-				allowBlank: false
-			},
-			{
 				xtype      : 'fieldcontainer',
 				fieldLabel : 'Priority',
 				defaultType: 'radiofield',
 				defaults: {
-					flex: 1
+					flex: 1,
+					width: 200
 				},
 				layout: 'hbox',
 				items: [
@@ -72,8 +67,7 @@ bodyPadding: '10',
 							"typename":Ext.getCmp('typename').getValue(),
 							"typeregex":Ext.getCmp('typeregex').getValue(),
 							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
-							"path":Ext.getCmp('path').getValue(),
-							"pos_file":Ext.getCmp('pos_file').getValue()
+							"path":Ext.getCmp('path').getValue()
 						};
 					Ext.Ajax.request({
 						url:"api/execute",
@@ -92,7 +86,6 @@ bodyPadding: '10',
 					});
 				}
 			},
-
 			{
 				xtype: 'button',
 				text: 'Delete',
@@ -106,12 +99,44 @@ bodyPadding: '10',
 					{
 						"typename":Ext.getCmp('typename').getValue(),
 						"typeregex":Ext.getCmp('typeregex').getValue(),
-						"priority":Ext.getCmp('priority').getValue(),
-						"path":Ext.getCmp('path').getValue(),
-						"pos_file":Ext.getCmp('pos_file').getValue()
+						"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
+						"path":Ext.getCmp('path').getValue()
 					};
 					Ext.Ajax.request({
 						url:"api/delete",
+						method:"POST",
+						jsonData: jsonRequest,
+
+						success:function(result, request){
+							jobId = Ext.JSON.decode(result.responseText);
+							me.jobID = jobId.jobid;
+							Ext.Msg.alert("Success", "Delete Type Name " + Ext.getCmp('typename').getValue());
+							//me.onJobFinish();
+						},
+						failure:function(result, request){
+									Ext.Msg.alert("Failed");
+								}
+					});
+				}
+			},
+			{
+				xtype: 'button',
+				text: 'Delete All',
+				handler: function() {
+					var me = this;
+					var jsonResult;
+					var jobId;
+					var jsonStatus;
+					var jobStatus = "running";
+					var jsonRequest = 
+					{
+						"typename":Ext.getCmp('typename').getValue(),
+						"typeregex":Ext.getCmp('typeregex').getValue(),
+						"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
+						"path":Ext.getCmp('path').getValue()
+					};
+					Ext.Ajax.request({
+						url:"api/deleteall",
 						method:"POST",
 						jsonData: jsonRequest,
 
