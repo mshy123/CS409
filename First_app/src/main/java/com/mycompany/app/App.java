@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.lang.Math;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -43,6 +44,10 @@ import org.json.simple.parser.ParseException;
 
 import com.mycompany.app.Rule.resultCode;
 
+import junit.textui.ResultPrinter;
+
+import org.apache.log4j.*;
+
 import scala.Tuple2;
 
 /**
@@ -62,6 +67,8 @@ import scala.Tuple2;
 public class App {
   private static final Pattern SPACE = Pattern.compile(" ");
   private static ArrayList<Rule> currentRules;
+  
+  final static Logger logger = Logger.getLogger(App.class);
 
   private App() {
   }
@@ -73,7 +80,6 @@ public class App {
     }
     
     currentRules = new ArrayList<Rule>();
-
     
 	try {
 		final JSONParser parser = new JSONParser();
@@ -91,19 +97,19 @@ public class App {
 			
 			for (Object type : jsonTypes) {
 				types.add(new Tuple ((String) ((JSONObject) type).get("name"),
-						Integer.parseInt((String) ((JSONObject) type).get("number"))));
+						Math.toIntExact((Long) ((JSONObject) type).get("number"))));
 			}
 			JSONArray jsonAttributes = (JSONArray) jsonRule.get("attributes");
 			ArrayList<String> attributes = new ArrayList<String>();
 			
 			for (Object attribute : jsonAttributes) {
-				attributes.add((String) attribute);
+				attributes.add(attribute.toString());
 			}
 			
 			Rule Rule = new Rule ((String) jsonRule.get("name"),
 					(Long) jsonRule.get("duration"),
 					(Boolean) jsonRule.get("ordered"), 
-					types);
+					types, attributes);
 			currentRules.add(Rule);
 		}
 		
@@ -116,6 +122,7 @@ public class App {
 	}
 	
 	final long baseRuleSize = currentRules.size();
+	logger.error("initial currentRules size: " + baseRuleSize);
     
     SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount");
     // Create the context with 2 seconds batch size
@@ -145,7 +152,7 @@ public class App {
     				return t.cartesian(rulesRDD);
     			}
     		});
-   
+    
     JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.map(
     		new Function<Tuple2<String, Rule>, Rule> () {
 				public Rule call(Tuple2<String, Rule> v1) {
@@ -158,8 +165,8 @@ public class App {
 						final JSONParser parser = new JSONParser();
 						Object obj = parser.parse(v1._1);
 						JSONObject packet = (JSONObject) obj;
-						type = new Tuple (packet.get("content").toString(), 
-												packet.get("name").toString());
+						type = new Tuple (packet.get("type").toString(), 
+								packet.get("content").toString());
 						result = rule.check(type);
 					} catch (ParseException e) {
 						e.printStackTrace();
@@ -167,11 +174,14 @@ public class App {
 					
 					if (type == null) return null;
 					
+					
+					
 					switch (result) {
 						case UPDATE:
 							if (rule.isBase()) {
 								rule.update(type);
 								currentRules.add(rule);
+								logger.error("UPDATE when rule is Base");
 							}
 							else {
 								// find rule from currentRules
@@ -179,21 +189,28 @@ public class App {
 								currentRules = rule.removeFrom(currentRules);
 								rule.update(type);
 								currentRules.add(rule);
+								logger.error("UPDATE when rule is not Base");
 							}
 							return rule;
 						case FAIL:
+							logger.error("FAIL");
 							return rule;
 						case TIMEOVER:
 							//remove rule;
 							currentRules = rule.removeFrom(currentRules);
+							logger.error("TIMEOVER");
 							return null;
 						case COMPLETE:
 							// remove rule;
+							logger.error("currentRules.size() = " + currentRules.size());
 							currentRules = rule.removeFrom(currentRules);
+							logger.error("currentRules.size() = " + currentRules.size());
+							logger.error("COMPLETE");
 							// operation on complete rule including saving to DB
 							return null;
 					}
 					
+					logger.error("I don't know");
 					return null;
 				}
     		});
@@ -217,7 +234,8 @@ public class App {
 //      });
     
 //    lines.print();
-    typeRulePairDStream.print();
+//    typeRulePairDStream.print();
+    resultRuleDstream.print();
 //    wordCounts.print();
     jssc.start();
     jssc.awaitTermination();
