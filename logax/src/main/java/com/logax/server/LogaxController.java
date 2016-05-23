@@ -110,8 +110,10 @@ public class LogaxController
 		DBClient.removeAll();
 		try
 		{
+			CoreController.stopCore();
 			FileWriter writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
 			writer.close();
+			CoreController.startCore();
 		}
 		catch (IOException e)
 		{
@@ -197,5 +199,28 @@ public class LogaxController
 			return "{\"error\":\"Bad file out\"}";
 		}
 		return "{\"error\":\"null\"}";
+	}
+
+	@RequestMapping(value = "/gettype/{requestString}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String returnTypeList(@PathVariable(value="requestString") String requestString)
+	{	
+		JSONObject obj = new JSONObject();
+
+		obj.put("success", true);
+		obj.put("data", DBClient.getType(requestString));
+		return obj.toJSONString();
+	}
+
+	@RequestMapping(value = "/typelist", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String returnTypeList()
+	{
+		JSONArray jarr = DBClient.getTreeTypeList();
+		JSONObject obj = new JSONObject();
+		obj.put("success", "true");
+		obj.put("children", jarr);
+		
+		return obj.toJSONString();
 	}
 }

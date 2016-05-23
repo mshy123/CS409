@@ -10,9 +10,13 @@ Ext.define('logax.view.dashboard.Dashboard', {
     layout: 'responsivecolumn',
 
 	items: [
+		//{
+		//	xtype: 'typelistform',
+		//	userCls: 'big-100 small-100 shadow'
+		//},
 		{		
 			xtype: 'dashboardform',
-            userCls: 'big-50 small-100 shadow'
+            userCls: 'big-100 small-100 shadow'
 	    }
     ]
 /*

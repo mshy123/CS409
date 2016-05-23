@@ -32,6 +32,24 @@ class ArrayBlock implements Block<Document>
 	}
 }
 
+class TreeBlock implements Block<Document>
+{
+	private JSONArray array;
+	
+	public TreeBlock(JSONArray array) {
+		this.array = array;
+	}
+	
+	@Override
+	public void apply(final Document document)
+	{
+		JSONObject type = new JSONObject();
+		type.put("text", document.getString("typename"));
+		type.put("leaf", "true");
+		array.add(type);
+	}
+}
+
 public class DBClient
 {
 	private static MongoClient client = null;
@@ -77,6 +95,22 @@ public class DBClient
 		db.getCollection("type").deleteMany(new Document());
 	}
 
+	public static JSONObject getType(String typename)
+	{
+		init();
+		JSONObject type = new JSONObject();
+		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
+		for (Document document : iterable)
+		{
+			type.put("typename", document.getString("typename"));
+			type.put("typeregex", document.getString("typeregex"));
+			type.put("priority", document.getString("priority"));
+			type.put("path", document.getString("path"));
+		}
+		
+		return type;
+	}
+
 	public static JSONArray getTypeList()
 	{
 		init();
@@ -84,6 +118,17 @@ public class DBClient
 		JSONArray typelist = new JSONArray();
 		FindIterable<Document> iterable = db.getCollection("type").find();
 		iterable.forEach(new ArrayBlock(typelist));
+		return typelist;
+	}
+
+	public static JSONArray getTreeTypeList()
+	{
+		init();
+
+		JSONArray typelist = new JSONArray();
+		FindIterable<Document> iterable = db.getCollection("type").find();
+		iterable.forEach(new TreeBlock(typelist));
+
 		return typelist;
 	}
 }
