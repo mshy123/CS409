@@ -32,6 +32,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -76,30 +77,6 @@ public class App {
 	private App() {
 	}
 
-	public static void dbSend (JavaRDD<Rule> t) {
-		t.foreachPartition(
-				new VoidFunction<Iterator<Rule>>() {
-					Mongo mongo = new Mongo("localhost", 27017);
-					DB db = mongo.getDB("test");
-					DBCollection collection = db.getCollection("Rules");
-					public void call(Iterator<Rule> t) throws Exception {
-						// TODO Auto-generated method stub
-
-						BasicDBObject document = new BasicDBObject();
-						document.put("name", "mkyongDB");
-						document.put("table", "hosting");
-
-						BasicDBObject documentDetail = new BasicDBObject();
-						documentDetail.put("records", 99);
-						documentDetail.put("index", "vps_index1");
-						documentDetail.put("active", "true");
-						document.put("detail", documentDetail);
-
-						collection.insert(document);
-					}
-				});
-	}
-
 	public static void main(String[] args) {
 		if (args.length < 4) {
 			System.err.println("Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>");
@@ -134,7 +111,7 @@ public class App {
 				ArrayList<String> attributes = new ArrayList<String>();
 
 				for (Object attribute : jsonAttributes) {
-					attributes.add(attribute.toString());
+					attributes.add(((JSONObject) attribute).get("name").toString());
 				}
 
 				Rule Rule = new Rule ((String) jsonRule.get("name"),
@@ -152,8 +129,7 @@ public class App {
 			e.printStackTrace();
 		}
 
-		final long baseRuleSize = baseRules.size();
-		logger.error("Initial baseRules size: " + baseRuleSize);
+		logger.error("Initial baseRules size: " + baseRules.size());
 
 		SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount");
 		// Create the context with 2 seconds batch size
@@ -171,6 +147,7 @@ public class App {
 
 		JavaDStream<String> lines = messages.map(new Function<Tuple2<String, String>, String>() {
 			public String call(Tuple2<String, String> tuple2) {
+				logger.error("1");
 				return tuple2._2();
 			}
 		});
@@ -178,99 +155,93 @@ public class App {
 		JavaPairDStream<String, Rule> typeRulePairDStream = lines.transformToPair(
 				new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
 					public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
+						logger.error("2");
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
-						logger.error("cartesian base size: " + baseRules.size());
-						logger.error("cartesian remain size: " + remainRules.size());
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
+						logger.error("2 size of rulesRDD: " + rulesRDD.count());
+						logger.error("2 size of lines: " + t.count());
 						return t.cartesian(rulesRDD);
 					}
-				});
+				});		
 
-		JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.map(
-				new Function<Tuple2<String, Rule>, Rule> () {
-					public Rule call(Tuple2<String, Rule> v1) {
+		JavaPairDStream<resultCode, Rule> resultRuleDstream = typeRulePairDStream.transformToPair(
+				new Function<JavaPairRDD <String, Rule>, JavaPairRDD<resultCode, Rule>> () {
+					public JavaPairRDD<resultCode, Rule> call(JavaPairRDD<String, Rule> v1) {
 						// TODO Auto-generated method stub
-						resultCode result = resultCode.FAIL;
-						Rule rule = v1._2;
-						Tuple type = null;
-						try {
-							//{"content":"{\"host\":\"127.0.0.1\",\"user\":\"-\",\"path\":\"/login.php\",\"code\":\"201\",\"size\":\"2691\"}","type":"high.apachepost","time":1463365885}
-							final JSONParser parser = new JSONParser();
-							Object obj = parser.parse(v1._1);
-							JSONObject packet = (JSONObject) obj;
-							type = new Tuple (packet.get("type").toString(), 
-									packet.get("content").toString());
-							result = rule.check(type);
-						} catch (ParseException e) {
-							e.printStackTrace();
-						}
+						logger.error("3");
+						return v1.mapToPair(new PairFunction<Tuple2<String,Rule>, resultCode, Rule> () {
+							public Tuple2<resultCode, Rule> call(Tuple2<String, Rule> v1) throws Exception {
+								// TODO Auto-generated method stub
+								resultCode result = resultCode.FAIL;
 
-						if (type == null) {
-							return null;
-						}
+								Rule rule = v1._2;
+								Tuple type = null;
+								try {
+									//{"content":"{\"host\":\"127.0.0.1\",\"user\":\"-\",\"path\":\"/login.php\",\"code\":\"201\",\"size\":\"2691\"}","type":"high.apachepost","time":1463365885}
+									final JSONParser parser = new JSONParser();
+									Object obj = parser.parse(v1._1);
+									JSONObject packet = (JSONObject) obj;
+									type = new Tuple (packet.get("type").toString(), 
+											packet.get("content").toString());
+									result = rule.check(type);
+								} catch (ParseException e) {
+									e.printStackTrace();
+								}
 
+								if (type == null) {
+									return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
+								}
 
-						switch (result) {
-						case UPDATE:
-							rule.update(type);
-							logger.error("UPDATE");
-							return rule;
-						case FAIL:
-							logger.error("FAIL");
-							if (rule.isBase()) {
-								return null;
+								switch (result) {
+								case UPDATE:
+									rule.update(type);
+									logger.error("3 UPDATE at " + type.typeName + " " + rule);
+									return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
+								case FAIL:
+									logger.error("3 FAIL at " + type.typeName + " " + rule);
+									if (rule.isBase()) {
+										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
+									}
+									else {
+										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
+									}
+								case TIMEOVER:
+									//remove rule;
+									logger.error("3 TIMEOVER at " + type.typeName + " " + rule);
+									return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, rule);
+								case COMPLETE:
+									// remove rule;
+									logger.error("3 COMPLETE at " + type.typeName + " " + rule);
+									rule.update(type);
+									// operation on complete rule including saving to DB
+									return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, rule);
+								}
+
+								return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
 							}
-							else {
-								return rule;
-							}
-						case TIMEOVER:
-							//remove rule;
-							logger.error("TIMEOVER");
-							return null;
-						case COMPLETE:
-							// remove rule;
-							logger.error("COMPLETE");
-							rule.update(type);
-							// operation on complete rule including saving to DB
-							return rule;
-						}
-
-						return null;
+						});
 					}
-				});
-		resultRuleDstream = resultRuleDstream.filter(
-				new Function<Rule, Boolean> () {
-
-					public Boolean call(Rule v1) throws Exception {
-						// TODO Auto-generated method stub
-						return v1!=null;
-					}
-
 				});
 
 		resultRuleDstream.foreachRDD(
-				new VoidFunction<JavaRDD<Rule>> (){
-
-					public void call(JavaRDD<Rule> t) throws Exception {
+				new VoidFunction<JavaPairRDD<resultCode, Rule>> (){
+					public void call(JavaPairRDD<resultCode, Rule> t) throws Exception {
 						// TODO Auto-generated method stub
-						if (remainRules.size() != 0) {
-							logger.error("remainRules init");
-							remainRules = new ArrayList<Rule>();
-						}
-
-						t.foreach( new VoidFunction<Rule> () {
-							public void call(Rule t) throws Exception {
+						logger.error("5");
+						t.foreach( new VoidFunction<Tuple2<resultCode, Rule>> () {
+							public void call(Tuple2<resultCode, Rule> t) throws Exception {
 								// TODO Auto-generated method stub
-								if (t.checkComplete()) {
+								logger.error("5-1");
+								if (t._1 == resultCode.COMPLETE) {
 									Mongo mongo = new Mongo("localhost", 27017);
 									DB db = mongo.getDB("test");
 									DBCollection collection = db.getCollection("Rules");
 									BasicDBObject document = new BasicDBObject();
-									document.put("name", t.getName());
+									document.put("name", t._2.getName());
 
 									ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
-									for (Tuple r : t.getCheckedTypes()) {
+									for (Tuple r : t._2.getCheckedTypes()) {
 										BasicDBObject tmp = new BasicDBObject();
 										tmp.put("name", r.typeName);
 										tmp.put("content", r.content);
@@ -280,31 +251,22 @@ public class App {
 
 									collection.insert(document);
 									mongo.close();
+
+									t._2.removeFrom(remainRules);
+								}
+								else if (t._1 == resultCode.UPDATE) {
+									t._2.removeFrom(remainRules);
+									remainRules.add(t._2);
+								}
+								else if (t._1 == resultCode.TIMEOVER) {
+									t._2.removeFrom(remainRules);
 								}
 							}
 						});
 					}
 				});
 
-		resultRuleDstream.foreachRDD(
-				new VoidFunction<JavaRDD<Rule>> (){
-
-					public void call(JavaRDD<Rule> t) throws Exception {
-						// TODO Auto-generated method stub
-						if (!t.isEmpty()) {
-							t.foreach( new VoidFunction<Rule> () {
-								public void call(Rule t) throws Exception {
-									// TODO Auto-generated method stub
-									if (!t.checkComplete()) {
-										remainRules.add(t);
-									}
-								}
-							});
-						}
-					}
-				});
-
-
+		//		typeRulePairDStream.print();
 		resultRuleDstream.print();
 		jssc.start();
 		jssc.awaitTermination();

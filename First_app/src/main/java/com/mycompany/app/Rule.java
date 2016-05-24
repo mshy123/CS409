@@ -8,6 +8,9 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class Rule implements Serializable{
+	public static long totalId = 1;
+	
+	private long id;
 	
 	private String name;
 
@@ -27,6 +30,7 @@ public class Rule implements Serializable{
 	
 	public Rule( String name_ , long duration_ , Boolean ordered_, ArrayList<Tuple> types_,
 			ArrayList<String> attributeList_) {
+		id = 0;
 		name = name_;
 		duration = duration_;
 		ordered = ordered_;
@@ -47,7 +51,11 @@ public class Rule implements Serializable{
 	public ArrayList<Tuple> getCheckedTypes() {
 		return checkedTypes;
 	}
-	
+
+	public long getId() {
+		return id;
+	}
+
 	public resultCode check( Tuple type) {
 		if( birthTime != 0 && System.currentTimeMillis() > birthTime + duration ) {
 			return resultCode.TIMEOVER;
@@ -61,6 +69,9 @@ public class Rule implements Serializable{
 					return resultCode.UPDATE;
 				} else {
 					JSONParser parser = new JSONParser();
+					if(checkedTypes.size() == 0) {
+						return resultCode.UPDATE;
+					}
 					try {
 						JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
 						JSONObject targetJson = (JSONObject)parser.parse(type.content);
@@ -69,9 +80,6 @@ public class Rule implements Serializable{
 									compareJson.get(attributeList.get(i)).toString() )){
 								return resultCode.FAIL;
 							}
-						}
-						if( checkedTypes.size() == types.size() - 1 ) {
-							 return resultCode.COMPLETE;
 						}
 						return resultCode.UPDATE;
 					} catch (ParseException e) {
@@ -117,6 +125,9 @@ public class Rule implements Serializable{
 						return resultCode.UPDATE;
 					} else {
 						JSONParser parser = new JSONParser();
+						if(checkedTypes.size() == 0) {
+							return resultCode.UPDATE;
+						}
 						try {
 							JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
 							JSONObject targetJson = (JSONObject)parser.parse(type.content);
@@ -143,6 +154,7 @@ public class Rule implements Serializable{
 	public void update( Tuple type ) {
 		if( checkedTypes.isEmpty() ) {
 			birthTime = System.currentTimeMillis();
+			id = totalId++;
 		}
 		checkedTypes.add(type);
 	}	
@@ -158,7 +170,7 @@ public class Rule implements Serializable{
 	
 	public ArrayList<Rule> removeFrom (ArrayList<Rule> rules) {
 		for (Rule rule : rules) {
-			if (rule.name.equals(this.name) && rule.birthTime == this.birthTime) {
+			if (rule.id == id) {
 				rules.remove(rule);
 				break;
 			}
