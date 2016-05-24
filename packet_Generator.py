@@ -13,7 +13,7 @@ def generate(argv_list):
     print "You can quit this program by Ctrl-C"
     while True:
         start = time.time()
-        f = open("PATH_OF_PACKET","a")
+        f = open("/var/log/apache2/access_log","a")
         for j in range(num_of_packet):
             f.write(content_of_packet+"\n")
         while time.time()-start < time_interval:

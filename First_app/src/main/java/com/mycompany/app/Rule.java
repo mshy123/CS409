@@ -10,7 +10,7 @@ import org.json.simple.parser.ParseException;
 public class Rule implements Serializable{
 	
 	private String name;
-	
+
 	private long birthTime;
 	
 	private long duration;
@@ -36,15 +36,27 @@ public class Rule implements Serializable{
 		attributeList = attributeList_;
 	}
 	
+	public String getName() {
+		return name;
+	}
+
+	public long getBirthTime() {
+		return birthTime;
+	}
+
+	public ArrayList<Tuple> getCheckedTypes() {
+		return checkedTypes;
+	}
+	
 	public resultCode check( Tuple type) {
-		if( checkedTypes.size() == types.size() ) {
-			 return resultCode.COMPLETE;
-		}
 		if( birthTime != 0 && System.currentTimeMillis() > birthTime + duration ) {
 			return resultCode.TIMEOVER;
 		}
 		if( ordered) {
 			if( type.typeName.equals(types.get( checkedTypes.size() ).typeName )) {
+				if( checkedTypes.size() == types.size() - 1 ) {
+					 return resultCode.COMPLETE;
+				}
 				if( attributeList.size() == 0 ) {
 					return resultCode.UPDATE;
 				} else {
@@ -58,6 +70,9 @@ public class Rule implements Serializable{
 								return resultCode.FAIL;
 							}
 						}
+						if( checkedTypes.size() == types.size() - 1 ) {
+							 return resultCode.COMPLETE;
+						}
 						return resultCode.UPDATE;
 					} catch (ParseException e) {
 						e.printStackTrace();
@@ -65,17 +80,39 @@ public class Rule implements Serializable{
 				}
 			}
 		} else {
-			ArrayList<Tuple> temp = new ArrayList<Tuple>(); 
-			temp.addAll(types);
-			for( int i = 0; i < types.size(); i++ ) {
-				for( int j = 0; j < checkedTypes.size(); j++ ) {
-					if( types.get(i).typeName.equals(checkedTypes.get(j).typeName )) {
-						temp.remove(i);
+			ArrayList<Tuple> temp1 = new ArrayList<Tuple>();
+			ArrayList<Tuple> temp2 = new ArrayList<Tuple>();
+			temp1.addAll(types);
+			temp2.addAll(checkedTypes);
+			int idx1 = 0;
+			int idx2 = 0;
+			boolean temp = false;
+			
+			while (idx1 < temp1.size()) {
+				idx2 = 0;
+				temp = false;
+				while (idx2 < temp2.size()) {
+					if (temp1.get(idx1).typeName.equals(temp2.get(idx2).typeName)) {
+						temp1.remove(idx1);
+						temp2.remove(idx2);
+						temp = true;
+						break;
 					}
+					idx2++;
 				}
+				if (temp) continue;
+				else idx1++;
 			}
-			for( int i = 0; i < temp.size(); i++ ) {
-				if( temp.get(i).typeName.equals(type.typeName )) {
+			
+			if (temp1.size() != types.size() - checkedTypes.size()) {
+				App.logger.error("!!DANGER!! You cannot arrive here!!!");
+			}
+			
+			for( int i = 0; i < temp1.size(); i++ ) {
+				if( temp1.get(i).typeName.equals(type.typeName )) {
+					if( checkedTypes.size() == types.size() - 1 ) {
+						 return resultCode.COMPLETE;
+					}
 					if( attributeList.size() == 0 ) {
 						return resultCode.UPDATE;
 					} else {
@@ -88,6 +125,9 @@ public class Rule implements Serializable{
 										compareJson.get(attributeList.get(j)).toString() )){
 									return resultCode.FAIL;
 								}
+							}
+							if( checkedTypes.size() == types.size() - 1 ) {
+								 return resultCode.COMPLETE;
 							}
 							return resultCode.UPDATE;
 						} catch (ParseException e) {
