@@ -958,14 +958,18 @@ $include-ext-window-toast: dynamic(true);;
 $include-ext-window-window: dynamic(true);;
 $include-logax-application: dynamic(true);;
 $include-logax-store-navigationtree: dynamic(true);;
+$include-logax-store-rulenumber: dynamic(true);;
+$include-logax-store-typenumber: dynamic(true);;
 $include-logax-view-dashboard-dashboard: dynamic(true);;
 $include-logax-view-dashboard-type: dynamic(true);;
-$include-logax-view-dashboard-typelist: dynamic(true);;
 $include-logax-view-main-main: dynamic(true);;
 $include-logax-view-main-maincontainerwrap: dynamic(true);;
 $include-logax-view-main-maincontroller: dynamic(true);;
 $include-logax-view-main-mainmodel: dynamic(true);;
-$include-logax-view-profile-profile: dynamic(true);;
+$include-logax-view-rule-addrule: dynamic(true);;
+$include-logax-view-rule-rule: dynamic(true);;
+$include-logax-view-rulelist-rulecontainer: dynamic(true);;
+$include-logax-view-rulelist-rulelist: dynamic(true);;
 
 
 /* ======================== ETC ======================== */

@@ -99,28 +99,16 @@ Ext.define('logax.view.dashboard.Type', {
 							"path":Ext.getCmp('path').getValue()
 						};
 						Ext.Ajax.request({
-							url:"api/delete",
+							url:"api/edittype",
 							method:"POST",
 							jsonData: jsonRequest,
 
 							success:function(result, request){
-								Ext.Ajax.request({
-									url:"api/execute",
-									method:"POST",
-									jsonData: jsonRequest,
-
-									success:function(result, request){
-										Ext.Msg.alert("Success", "Edit Type Name " + Ext.getCmp('typename').getValue());
-									},
-									failure:function(result, request)
-									{
-										Ext.Msg.alert("Failed");
-									}
-								});
+								Ext.Msg.alert("Success", "Edit Type Name " + Ext.getCmp('typename').getValue());
 							},
 							failure:function(result, request){
-										Ext.Msg.alert("Failed");
-									}
+								Ext.Msg.alert("Failed");
+							}
 						});
 
 					}
@@ -143,9 +131,13 @@ Ext.define('logax.view.dashboard.Type', {
 							jsonData: jsonRequest,
 
 							success:function(result, request){
-								jobId = Ext.JSON.decode(result.responseText);
-								me.jobID = jobId.jobid;
-								Ext.Msg.alert("Success", "Delete Type Name " + Ext.getCmp('typename').getValue());
+								var job = Ext.JSON.decode(result.responseText);
+								if (!job.success) {
+									Ext.Msg.alert("Fail", "This type is bind with Rule");
+								}
+								else {
+									Ext.Msg.alert("Success", "Delete Type Name " + Ext.getCmp('typename').getValue());
+								}
 							},
 							failure:function(result, request){
 										Ext.Msg.alert("Failed");
@@ -172,17 +164,57 @@ Ext.define('logax.view.dashboard.Type', {
 							jsonData: jsonRequest,
 
 							success:function(result, request){
-								jobId = Ext.JSON.decode(result.responseText);
-								me.jobID = jobId.jobid;
-								Ext.Msg.alert("Success", "Add Type Name " + Ext.getCmp('typename').getValue());
+								var job = Ext.JSON.decode(result.responseText);
+								if (!job.success) {
+									Ext.Msg.alert("Fail", "Already Exist " + Ext.getCmp('typename').getValue());
+								}
+								else {
+									Ext.Msg.alert("Success", "Add Type Name " + Ext.getCmp('typename').getValue());
+								}
+
 							},
 							failure:function(result, request){
-										Ext.Msg.alert("Failed");
-									}
+								Ext.Msg.alert("Failed");
+							}
 						});
 						me.up('form').down('treepanel').getStore().load();
 					}
 				}
 			]
+		}],
+	tools: [
+		{
+			xtype: 'button',
+			text: 'Refresh',
+			handler: function() {
+				var me = this;
+				me.up('form').down('treepanel').getStore().load();
+			}
+		},
+		{
+			xtype: 'button',
+			text: 'Delete All Type',
+
+			handler: function() {
+				var me = this;
+				Ext.Ajax.request({
+					url:"api/deletealltype",
+					method:"GET",
+
+					success:function(result, request){
+						var job = Ext.JSON.decode(result.responseText);
+						if (!job.success) {
+							Ext.Msg.alert("Fail", "Type is bind with Rule");
+						}
+						else {
+							Ext.Msg.alert("Success", "Success to delete all type");
+						}
+					},
+					failure:function(result, request){
+						Ext.Msg.alert("Connection Failed");
+					}
+				});
+				me.up('form').down('treepanel').getStore().load();
+			}
 		}]
 });

@@ -18,15 +18,9 @@ Ext.define('logax.store.NavigationTree', {
 				leaf: true
 			},
 			{
-				text: 'Type List',
+				text: 'Add Rule',
 				iconCls: 'x-fa fa-user',
-				viewType: 'profile',
-				leaf: true
-			}/*,
-			{
-				text: 'Rule',
-				iconCls: 'x-fa fa-user',
-				viewType: 'ruleview',
+				viewType: 'rule',
 				leaf: true
 			},
 			{
@@ -34,7 +28,7 @@ Ext.define('logax.store.NavigationTree', {
 				iconCls: 'x-fa fa-user',
 				viewType: 'rulelist',
 				leaf: true
-			}*/
+			}
 		]
 	}
 });

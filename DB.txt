@@ -1,9 +1,9 @@
 <source>
   @type tail
-  format dferq
+  format asdfeerqr
   path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/newpacket
-  tag high.newpacket
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachegetpacket2
+  tag high.apachegetpacket2
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 
@@ -11,44 +11,26 @@
   @type tail
   format asdfeerqr
   path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachegetpacket
-  tag high.apachegetpacket
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachegetpacket1
+  tag high.apachegetpacket1
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 
 <source>
   @type tail
-  format dferq123
-  path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/newpacket2
-  tag high.newpacket2
+  format qweqwe
+  path asdfqwe
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apacheshowp
+  tag high.apacheshowp
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 
 <source>
   @type tail
-  format dferq1232112
-  path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/newpacket22
-  tag high.newpacket22
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format dferq
-  path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/newpacketjh
-  tag high.newpacketjh
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format dferq12321
-  path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/newpacket24
-  tag low.newpacket24
+  format qweqwe
+  path asdfqwe
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachestop
+  tag high.apachestop
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 

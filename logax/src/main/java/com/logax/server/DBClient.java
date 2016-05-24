@@ -12,6 +12,36 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Filters;
 
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.io.*;
+
+class RuleArrayBlock implements Block<Document>
+{
+	private JSONArray array;
+	
+	public RuleArrayBlock(JSONArray array) {
+		this.array = array;
+	}
+	
+	@Override
+	public void apply(final Document document)
+	{
+		JSONParser parser = new JSONParser();
+		JSONObject rule = null;
+		try
+		{
+			rule = (JSONObject)parser.parse(document.getString("body"));
+		}
+		catch(ParseException e)
+		{
+		}
+
+		array.add(rule);
+	}
+}
+
 class ArrayBlock implements Block<Document>
 {
 	private JSONArray array;
@@ -50,6 +80,23 @@ class TreeBlock implements Block<Document>
 	}
 }
 
+class TreeRuleBlock implements Block<Document>
+{
+	private JSONArray array;
+	
+	public TreeRuleBlock(JSONArray array) {
+		this.array = array;
+	}
+	
+	@Override
+	public void apply(final Document document)
+	{
+		JSONObject rule = new JSONObject();
+		rule.put("text", document.getString("rulename"));
+		rule.put("leaf", "true");
+		array.add(rule);
+	}
+}
 public class DBClient
 {
 	private static MongoClient client = null;
@@ -88,7 +135,7 @@ public class DBClient
 		db.getCollection("type").deleteMany(new Document("typename", typename));
 	}
 
-	public static void removeAll()
+	public static void removeAllType()
 	{
 		init();
 
@@ -131,4 +178,181 @@ public class DBClient
 
 		return typelist;
 	}
+
+	public static String getuniqueid()
+	{
+		init();
+		Document lastJob = db.getCollection("rule")
+			.find()
+			.sort(new Document("uniqueid", -1))
+			.first();
+		if (lastJob == null)
+			return "1";
+		else
+			return Integer.toString(Integer.parseInt(lastJob.getString("uniqueid")) + 1);
+	}
+
+	public static int addRule(JSONObject job, String rulename)
+	{
+		init();
+		Document type = new Document()
+			.append("uniqueid", getuniqueid())
+			.append("rulename", rulename)
+			.append("body", job.toString());
+		FindIterable<Document> iterable = db.getCollection("rule").find(new Document("rulename", rulename));
+		for (Document document : iterable)
+		{
+			return -1;
+		}
+		db.getCollection("rule").insertOne(type);
+	
+		return 0;
+	}
+
+	public static void removeRule(String id)
+	{
+		init();
+		
+		FindIterable<Document> iterable = db.getCollection("rule").find(new Document("uniqueid", id));
+		for (Document document : iterable)
+		{
+			String rulename = (String)document.getString("rulename");
+			ruleTypeDisconnect(rulename);
+		}
+		db.getCollection("rule").deleteMany(new Document("uniqueid", id));
+	}
+	
+	public static void removeAllRule()
+	{
+		init();
+		db.getCollection("ruletype").deleteMany(new Document());
+		db.getCollection("rule").deleteMany(new Document());
+	}
+
+	public static JSONArray getRuleList()
+	{
+		init();
+
+		JSONArray rulelist = new JSONArray();
+		FindIterable<Document> iterable = db.getCollection("rule").find();
+		iterable.forEach(new RuleArrayBlock(rulelist));
+		return rulelist;
+	}
+
+	public static JSONObject getRuleFrame(String rulename)
+	{
+		init();
+		FindIterable<Document> iterable = db.getCollection("rule").find(new Document("rulename", rulename));
+		JSONObject result = new JSONObject();
+		JSONParser parser = new JSONParser();
+		try
+		{
+			for (Document document : iterable) {
+
+				JSONObject rule = (JSONObject)parser.parse(document.getString("body"));
+				JSONArray typearray = (JSONArray)rule.get("types");
+				JSONArray attarray = (JSONArray)rule.get("attributes");
+				result.put("success", true);
+				result.put("typenum", Integer.toString(typearray.size()));
+				result.put("attnum", Integer.toString(attarray.size()));
+			}
+		}
+		catch(ParseException e)
+		{
+			result.put("success", false);
+		}
+		return result;
+	}
+
+	public static JSONObject getRule(String rulename)
+	{
+		init();
+		FindIterable<Document> iterable = db.getCollection("rule").find(new Document("rulename", rulename));
+		JSONObject result = new JSONObject();
+		JSONParser parser = new JSONParser();
+		try
+		{
+			for (Document document : iterable) {
+				JSONObject rule = (JSONObject)parser.parse(document.getString("body"));
+				JSONArray typearray = (JSONArray)rule.get("types");
+				JSONArray attarray = (JSONArray)rule.get("attributes");
+				result.put("controlleruniqueid", (String)document.getString("uniqueid"));
+				result.put("controllername", (String)rule.get("name"));
+				result.put("controllerduration", (int)(long) (Long)rule.get("duration"));
+				result.put("controllerordered", (String)rule.get("ordered"));
+				int i = 0;
+				for (Object ob : typearray) {
+					JSONObject job = (JSONObject)ob;
+					result.put("controllertypename" + Integer.toString(i), (String)job.get("name"));
+					result.put("controllertypenum" + Integer.toString(i), (int)(long)(Long)job.get("number"));
+					i++;
+				}
+				i = 0;
+				for (Object ob : attarray) {
+					JSONObject job = (JSONObject)ob;
+					result.put("controllerattribute" + Integer.toString(i), (String)job.get("name"));
+					i++;
+				}
+			}
+		}
+		catch(ParseException e)
+		{
+			result.put("success", false);
+		}
+		return result;
+	}
+	
+	public static JSONArray getRuleTreeList()
+	{
+		init();
+
+		JSONArray rulelist = new JSONArray();
+		FindIterable<Document> iterable = db.getCollection("rule").find();
+		iterable.forEach(new TreeRuleBlock(rulelist));
+
+		return rulelist;
+	}
+
+	public static void ruleTypeConnect(JSONObject rule)
+	{
+		init();
+		JSONArray jarr = (JSONArray)rule.get("types");
+		for (Object obj : jarr) {
+			JSONObject job = (JSONObject)obj;
+			Document type = new Document()
+				.append("type", (String)job.get("name"))
+				.append("rule", (String)rule.get("name"));
+			db.getCollection("ruletype").insertOne(type);
+		}
+	}
+
+	public static void ruleTypeDisconnect(String rulename)
+	{
+		init();
+		db.getCollection("ruletype").deleteMany(new Document("rule", rulename));
+	}
+
+	public static int isTypeConnect(String typename)
+	{
+		init();
+		FindIterable<Document> iterable = db.getCollection("ruletype").find(new Document("type", typename));
+		for (Document document : iterable)
+		{
+			return -1;
+		}
+
+		return 0;
+	}	
+	
+	public static int isAllTypeConnect()
+	{
+		init();
+		FindIterable<Document> iterable = db.getCollection("ruletype").find();
+		for (Document document : iterable)
+		{
+			return -1;
+		}
+
+		return 0;
+	}	
 }
