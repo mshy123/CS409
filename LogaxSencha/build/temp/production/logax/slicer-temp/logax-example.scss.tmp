@@ -958,6 +958,7 @@ $include-ext-window-toast: dynamic(true);;
 $include-ext-window-window: dynamic(true);;
 $include-logax-application: dynamic(true);;
 $include-logax-store-navigationtree: dynamic(true);;
+$include-logax-store-remotetype: dynamic(true);;
 $include-logax-store-rulenumber: dynamic(true);;
 $include-logax-store-typenumber: dynamic(true);;
 $include-logax-view-dashboard-dashboard: dynamic(true);;

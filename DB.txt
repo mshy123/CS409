@@ -9,7 +9,7 @@
 
 <source>
   @type tail
-  format asdfeerqr
+  format client,host,GET
   path /var/log/apache2/access_log
   pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachegetpacket1
   tag high.apachegetpacket1
@@ -18,19 +18,46 @@
 
 <source>
   @type tail
-  format qweqwe
-  path asdfqwe
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apacheshowp
-  tag high.apacheshowp
+  format sdf
+  path qwe
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/SSS
+  tag high.SSS
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 
 <source>
   @type tail
-  format qweqwe
-  path asdfqwe
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachestop
-  tag high.apachestop
+  format sdf
+  path qwe
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/SSSweq
+  tag high.SSSweq
+  time_format %d/%b/%Y:%H:%M:%S %z
+</source>
+
+<source>
+  @type tail
+  format adf
+  path qwe
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/deq
+  tag high.deq
+  time_format %d/%b/%Y:%H:%M:%S %z
+</source>
+
+<source>
+  @type tail
+  format qewr
+  path eeq
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/eqrwe
+  tag high.eqrwe
+  time_format %d/%b/%Y:%H:%M:%S %z
+</source>
+
+<source>
+  @type tail
+  format eqw
+  path eqrqwe
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/showme
+  tag low.showme
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 

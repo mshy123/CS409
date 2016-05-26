@@ -80,6 +80,27 @@ class TreeBlock implements Block<Document>
 	}
 }
 
+class JsonBlock implements Block<Document>
+{
+	private JSONArray array;
+	private int num;
+
+	public JsonBlock(JSONArray array) {
+		this.array = array;
+		num = 1;
+	}
+	
+	@Override
+	public void apply(final Document document)
+	{
+		JSONObject type = new JSONObject();
+		type.put("typename", document.getString("typename"));
+		type.put("code", num);
+		num++;
+		array.add(type);
+	}
+}
+
 class TreeRuleBlock implements Block<Document>
 {
 	private JSONArray array;
@@ -175,6 +196,17 @@ public class DBClient
 		JSONArray typelist = new JSONArray();
 		FindIterable<Document> iterable = db.getCollection("type").find();
 		iterable.forEach(new TreeBlock(typelist));
+
+		return typelist;
+	}
+
+	public static JSONArray getJsonTypeList()
+	{
+		init();
+
+		JSONArray typelist = new JSONArray();
+		FindIterable<Document> iterable = db.getCollection("type").find();
+		iterable.forEach(new JsonBlock(typelist));
 
 		return typelist;
 	}

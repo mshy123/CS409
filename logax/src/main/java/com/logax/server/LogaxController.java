@@ -329,6 +329,16 @@ public class LogaxController
 		return obj.toJSONString();
 	}
 	
+	@RequestMapping(value = "/getjsontypelist", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String returnJsonTypeList()
+	{
+		JSONObject obj = new JSONObject();
+		obj.put("types", DBClient.getJsonTypeList());
+		
+		return obj.toJSONString();
+	}
+
 	@RequestMapping(value = "/addrule", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String addRule(@RequestBody String requestString)

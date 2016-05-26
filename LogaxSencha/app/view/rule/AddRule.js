@@ -2,14 +2,17 @@ Ext.define('logax.view.rule.AddRule', {
 	extend: 'Ext.form.Panel',
 	xtype: 'addruleform',
 
+
 	requires: [
 		'Ext.form.Panel',
 		'Ext.form.FieldSet',
 		'Ext.layout.container.Column',
 		'Ext.layout.container.Anchor',
 		'Ext.form.*',
+		'Ext.form.field.ComboBox',
 		'Ext.tree.Panel',
-		'Ext.data.TreeStore'
+		'Ext.data.TreeStore',
+		'Ext.data.JsonStore'
 	],
 	
 	frame: true,
@@ -83,6 +86,34 @@ Ext.define('logax.view.rule.AddRule', {
 				var num = logax.store.TypeNumber.typenum;
 				logax.store.TypeNumber.typenum = num + 1;
 				logax.store.TypeNumber.typelist.push(num);
+				var typetext2 = Ext.create('Ext.form.field.ComboBox',
+				{
+					fieldLabel: 'Type List',
+					triggerAction: 'all',
+					name: 'typename',
+					id: Ext.String.format('typelistfield' + num),
+					store: Ext.create('Ext.data.JsonStore', {
+	    		        autoLoad: true,
+						proxy :{
+							type: 'ajax',
+							url: 'api/getjsontypelist',
+							reader: {
+								type: 'json',
+           						root: 'types'
+							}
+						},
+            			fields: [
+							{type : 'integer', name : 'code'},
+							{type : 'string', name : 'typename'}
+						]
+	    		    }),
+					displayField: 'typename',
+					valueField:'code',
+					typeAhead: true,
+					forceSelection: true,
+					selectOnFocus: true,
+					queryMode: 'local'
+				});	
 				var typescreen = Ext.create('Ext.form.FieldSet',
 				{
 					xtype: 'fieldcontainer',
@@ -120,7 +151,8 @@ Ext.define('logax.view.rule.AddRule', {
 						me.up('form').down('fieldset').remove(typescreen, true);
 					}
 				});
-				typescreen.add(typetext);
+				//typescreen.add(typetext);
+				typescreen.add(typetext2);
 				typescreen.add(typenumtext);
 				typescreen.add(deletetypescreen);
 				me.up('form').down('fieldset').add(typescreen);
@@ -168,6 +200,16 @@ Ext.define('logax.view.rule.AddRule', {
 		},
 		{
 			xtype: 'button',
+			text: 'Refresh',
+			handler: function() {
+				var typelistnum = logax.store.TypeNumber.typelist;
+				for (i = 0; i < typelistnum.length; i++) {
+					Ext.getCmp(Ext.String.format('typelistfield' + typelistnum[i])).getStore().load();
+				}
+			}
+		},
+		{
+			xtype: 'button',
 			text: 'Commit',
 			handler: function() {
 				var me = this;
@@ -180,7 +222,7 @@ Ext.define('logax.view.rule.AddRule', {
 				for (i = 0; i < typelistnum.length; i++) {
 					typejson =
 					{
-						"name":Ext.getCmp(Ext.String.format('typename' + typelistnum[i])).getValue(),
+						"name":Ext.getCmp(Ext.String.format('typelistfield' + typelistnum[i])).getRawValue(),
 						"number":Ext.String.format(Ext.getCmp(Ext.String.format('typenum' + typelistnum[i])).getValue())
 					};
 					typejsonlist.push(typejson);
@@ -206,7 +248,6 @@ Ext.define('logax.view.rule.AddRule', {
 					url:"api/addrule",
 					method:"POST",
 					jsonData: jsonRequest,
-
 					success:function(result, request) {
 						var job = Ext.JSON.decode(result.responseText);
 						if (!job.success) {
@@ -220,7 +261,6 @@ Ext.define('logax.view.rule.AddRule', {
 						Ext.Msg.alert("Failed");
 					}
 				});
-				me.up('form').up('container').down('form').down('treepanel').getStore().load();
 			}
 		}]
 });
