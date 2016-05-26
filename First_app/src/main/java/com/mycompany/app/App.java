@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,12 +26,14 @@ import java.util.HashMap;
  */
 
 import java.util.Map;
-import java.util.regex.Pattern;
 
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -41,6 +45,10 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.Mongo;
 import com.mycompany.app.Rule.resultCode;
 
 import scala.Tuple2;
@@ -60,164 +68,223 @@ import scala.Tuple2;
  */
 
 public class App {
-  private static final Pattern SPACE = Pattern.compile(" ");
-  private static ArrayList<Rule> currentRules;
+	private static ArrayList<Rule> baseRules;
+	private static ArrayList<Rule> remainRules;
 
-  private App() {
-  }
+	final static Logger logger = Logger.getLogger(App.class);
+	public static String myUrl = "";
 
-  public static void main(String[] args) {
-    if (args.length < 4) {
-      System.err.println("Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>");
-      System.exit(1);
-    }
-    
-    currentRules = new ArrayList<Rule>();
-
-    final JSONParser parser = new JSONParser();
-	try {
-		Object obj = parser.parse(new FileReader("Rule.json"));
-		
-		JSONObject jsonObject = (JSONObject) obj;
- 
-		JSONArray Rules = (JSONArray) jsonObject.get("Rule");
-		
-		for (Object rule : Rules) {
-			JSONObject jsonRule = (JSONObject) rule;
-			
-			JSONArray jsonTypes = (JSONArray) jsonRule.get("types");
-			ArrayList<Tuple> types = new ArrayList<Tuple>();
-			
-			for (Object type : jsonTypes) {
-				types.add(new Tuple ((String) ((JSONObject) type).get("name"),
-						Integer.parseInt((String) ((JSONObject) type).get("number"))));
-			}
-			JSONArray jsonAttributes = (JSONArray) jsonRule.get("attributes");
-			ArrayList<String> attributes = new ArrayList<String>();
-			
-			for (Object attribute : jsonAttributes) {
-				attributes.add((String) attribute);
-			}
-			
-			Rule Rule = new Rule ((String) jsonRule.get("name"),
-					(Long) jsonRule.get("duration"),
-					(Boolean) jsonRule.get("ordered"), 
-					types);
-			currentRules.add(Rule);
-		}
-		
-	} catch (FileNotFoundException e) {
-		e.printStackTrace();
-	} catch (IOException e) {
-		e.printStackTrace();
-	} catch (ParseException e) {
-		e.printStackTrace();
+	private App() {
 	}
 	
-	final long baseRuleSize = currentRules.size();
-    
-    SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount");
-    // Create the context with 2 seconds batch size
-    JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
+	private static void writeDB (Rule r) {
+		logger.error("write to DB");
+		Mongo mongo = new Mongo("localhost", 27017);
+		DB db = mongo.getDB("test");
+		DBCollection collection = db.getCollection("Rules");
+		BasicDBObject document = new BasicDBObject();
+		document.put("name", r.getName());
 
-    int numThreads = Integer.parseInt(args[3]);
-    Map<String, Integer> topicMap = new HashMap<String, Integer>();
-    String[] topics = args[2].split(",");
-    for (String topic: topics) {
-      topicMap.put(topic, numThreads);
-    }
+		ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
+		for (Tuple t : r.getCheckedTypes()) {
+			BasicDBObject tmp = new BasicDBObject();
+			tmp.put("name", t.typeName);
+			tmp.put("content", t.content);
+			types.add(tmp);
+		}
+		document.put("types", types);
 
-    JavaPairReceiverInputDStream<String, String> messages =
-            KafkaUtils.createStream(jssc, args[0], args[1], topicMap);
+		collection.insert(document);
+		mongo.close();
+	}
 
-    JavaDStream<String> lines = messages.map(new Function<Tuple2<String, String>, String>() {
-      public String call(Tuple2<String, String> tuple2) {
-        return tuple2._2();
-      }
-    });
+	public static void main(String[] args) {
+		if (args.length < 4) {
+			System.err.println("Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>");
+			System.exit(1);
+		}
 
-    final JavaRDD<Rule> rulesRDD = jssc.sparkContext().parallelize(currentRules);
-    
-    JavaPairDStream<String, Rule> typeRulePairDStream = lines.transformToPair(
-    		new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
-    			public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
-    				return t.cartesian(rulesRDD);
-    			}
-    		});
-   
-    JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.map(
-    		new Function<Tuple2<String, Rule>, Rule> () {
-				public Rule call(Tuple2<String, Rule> v1) {
-					// TODO Auto-generated method stub
-					resultCode result = resultCode.FAIL;
-					Rule rule = v1._2;
-					Tuple type = null;
-					try {
-						Object obj = parser.parse(v1._1);
-						JSONObject packet = (JSONObject) obj;
-						type = new Tuple (packet.get("content").toString(), 
-												packet.get("name").toString());
-						result = rule.check(type);
-					} catch (ParseException e) {
-						e.printStackTrace();
+		baseRules = new ArrayList<Rule>();
+		remainRules = new ArrayList<Rule>();
+
+		try {
+			final JSONParser parser = new JSONParser();
+			Object obj = parser.parse(new FileReader("Rule.json"));
+
+			JSONObject jsonObject = (JSONObject) obj;
+
+			JSONArray Rules = (JSONArray) jsonObject.get("Rule");
+
+			for (Object rule : Rules) {
+				JSONObject jsonRule = (JSONObject) rule;
+
+				JSONArray jsonTypes = (JSONArray) jsonRule.get("types");
+				ArrayList<Tuple> types = new ArrayList<Tuple>();
+
+				for (Object type : jsonTypes) {
+					for (int i=0;
+							i<Math.toIntExact((Long) ((JSONObject) type).get("number"));
+							i++) {
+						types.add(new Tuple ((String) ((JSONObject) type).get("name"), 1));
 					}
-					
-					if (type == null) return null;
-					
-					switch (result) {
-						case UPDATE:
-							if (rule.isBase()) {
-								rule.update(type);
-								currentRules.add(rule);
-							}
-							else {
-								// find rule from currentRules
-								// remove it and add new rule updated
-								currentRules = rule.removeFrom(currentRules);
-								rule.update(type);
-								currentRules.add(rule);
-							}
-							return rule;
-						case FAIL:
-							return rule;
-						case TIMEOVER:
-							//remove rule;
-							currentRules = rule.removeFrom(currentRules);
-							return null;
-						case COMPLETE:
-							// operation on complete rule
-							// save to DB or sth
-							// remove rule;
-							currentRules = rule.removeFrom(currentRules);
-							return null;
-					}
-					
-					return null;
 				}
-    		});
-    
-    
-//    JavaDStream<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
-//      public Iterable<String> call(String x) {
-//        return Lists.newArrayList(SPACE.split(x));
-//      }
-//    });
-//
-//    JavaPairDStream<String, Integer> wordCounts = words.mapToPair(
-//      new PairFunction<String, String, Integer>() {
-//        public Tuple2<String, Integer> call(String s) {
-//          return new Tuple2<String, Integer>(s, 1);
-//        }
-//      }).reduceByKey(new Function2<Integer, Integer, Integer>() {
-//        public Integer call(Integer i1, Integer i2) {
-//          return i1 + i2;
-//        }
-//      });
-    
-//    lines.print();
-    typeRulePairDStream.print();
-//    wordCounts.print();
-    jssc.start();
-    jssc.awaitTermination();
-  }
+				JSONArray jsonAttributes = (JSONArray) jsonRule.get("attributes");
+				ArrayList<String> attributes = new ArrayList<String>();
+
+				for (Object attribute : jsonAttributes) {
+					attributes.add(((JSONObject) attribute).get("name").toString());
+				}
+
+				Rule Rule = new Rule ((String) jsonRule.get("name"),
+						(Long) jsonRule.get("duration"),
+						(Boolean) jsonRule.get("ordered"), 
+						types, attributes);
+				baseRules.add(Rule);
+			}
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
+		logger.error("Initial baseRules size: " + baseRules.size());
+
+		SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount");
+		// Create the context with 2 seconds batch size
+		final JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
+
+		int numThreads = Integer.parseInt(args[3]);
+		Map<String, Integer> topicMap = new HashMap<String, Integer>();
+		String[] topics = args[2].split(",");
+		for (String topic: topics) {
+			topicMap.put(topic, numThreads);
+		}
+
+		JavaPairReceiverInputDStream<String, String> messages =
+				KafkaUtils.createStream(jssc, args[0], args[1], topicMap);
+
+		JavaDStream<String> lines = messages.map(new Function<Tuple2<String, String>, String>() {
+			public String call(Tuple2<String, String> tuple2) {
+				return tuple2._2();
+			}
+		});
+
+		JavaPairDStream<String, Rule> typeRulePairDStream = lines.transformToPair(
+				new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
+					public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
+						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
+						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
+						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
+						logger.error("2 size of baseRDD: " + baseRulesRDD.count());
+						logger.error("2 size of remainRulesRDD: " + remainRulesRDD.count());
+						logger.error("2 size of rulesRDD: " + rulesRDD.count());
+						logger.error("2 size of lines: " + t.count());
+						return t.cartesian(rulesRDD);
+					}
+				});
+
+		JavaPairDStream<resultCode, Rule> resultRuleDstream = typeRulePairDStream.transformToPair(
+				new Function<JavaPairRDD <String, Rule>, JavaPairRDD<resultCode, Rule>> () {
+					public JavaPairRDD<resultCode, Rule> call(JavaPairRDD<String, Rule> v1) {
+						// TODO Auto-generated method stub
+						return v1.mapToPair(new PairFunction<Tuple2<String,Rule>, resultCode, Rule> () {
+							public Tuple2<resultCode, Rule> call(Tuple2<String, Rule> v1) throws Exception {
+								// TODO Auto-generated method stub
+								resultCode result = resultCode.FAIL;
+
+								Rule rule = v1._2;
+								Tuple type = null;
+								try {
+									//{"content":"{\"host\":\"127.0.0.1\",\"user\":\"-\",\"path\":\"/login.php\",\"code\":\"201\",\"size\":\"2691\"}","type":"high.apachepost","time":1463365885}
+									final JSONParser parser = new JSONParser();
+									Object obj = parser.parse(v1._1);
+									JSONObject packet = (JSONObject) obj;
+									type = new Tuple (packet.get("type").toString(), 
+											packet.get("content").toString());
+									result = rule.check(type);
+								} catch (ParseException e) {
+									e.printStackTrace();
+								}
+
+								if (type == null) {
+									return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
+								}
+
+								switch (result) {
+								case UPDATE:
+									rule.update(type);
+									logger.error("UPDATE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
+//									logger.error("UPDATE: " + rule.getId());
+									return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
+								case FAIL:
+									if (rule.isBase()) {
+										logger.error("FAIL: " + rule.getId());
+										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
+									}
+									else {
+										logger.error("FAIL: " + rule.getId());
+										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
+									}
+								case TIMEOVER:
+									//remove rule;
+									logger.error("TIMEOVER: " + rule.getId());
+									return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, rule);
+								case COMPLETE:
+									// remove rule;
+									rule.update(type);
+									logger.error("COMPLETE " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
+//									logger.error("COMPLETE: " + rule.getId());
+									return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, rule);
+								}
+
+								return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
+							}
+						});
+					}
+				});
+
+		resultRuleDstream.foreachRDD(
+				new VoidFunction<JavaPairRDD<resultCode, Rule>> (){
+					public void call(JavaPairRDD<resultCode, Rule> t) throws Exception {
+						// TODO Auto-generated method stub
+						t.foreach( new VoidFunction<Tuple2<resultCode, Rule>> () {
+							public void call(Tuple2<resultCode, Rule> t) throws Exception {
+								// TODO Auto-generated method stub
+								if (t._1 == resultCode.COMPLETE) {
+									writeDB(t._2);
+									t._2.removeFrom(remainRules);
+								}
+								else if (t._1 == resultCode.UPDATE) {
+									boolean temp = false;
+									for (Rule r : remainRules) {
+										if (r.getId() == t._2.getId()) {
+											r.union(t._2);
+											temp = true;
+											if (r.checkComplete()) {
+												writeDB(t._2);
+												t._2.removeFrom(remainRules);
+											}
+										}
+										break;
+									}
+									if ((!temp) && t._2.getCheckedTypes().size() == 1) {
+										remainRules.add(t._2);
+									}
+								}
+								else if (t._1 == resultCode.TIMEOVER) {
+									t._2.removeFrom(remainRules);
+								}
+							}
+						});
+					}
+				});
+
+//		typeRulePairDStream.print();
+//		resultRuleDstream.print();
+		jssc.start();
+		jssc.awaitTermination();
+	}
 }

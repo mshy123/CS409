@@ -21,7 +21,7 @@ import java.io.*;
 public class LogaxController
 {
 	private String fluentpath = "/Users/hyunhoha/LocalCEP/fluent/fluent.conf";
-	private String rulepath = "Users/hyunhoha/LocalCEP/Rule.json";
+	private String rulepath = "/Users/hyunhoha/LocalCEP/Rule.json";
 
 	@RequestMapping(value = "/execute", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
@@ -370,14 +370,14 @@ public class LogaxController
 		DBClient.ruleTypeConnect(json);
 
 		try	{
-			CoreController.sparkStop();
+			//CoreController.sparkStop();
 			FileWriter writer = new FileWriter(rulepath);
 			JSONObject job = new JSONObject();
 			job.put("Rule", DBClient.getRuleList());
 			writer.write(job.toJSONString());
 			writer.flush();
 			writer.close();
-			CoreController.sparkStart();
+			//CoreController.sparkStart();
 		}
 		catch(IOException e)
 		{
@@ -399,14 +399,14 @@ public class LogaxController
 	{
 		DBClient.removeRule(requestString);
 		try	{
-			CoreController.sparkStop();
+			//CoreController.sparkStop();
 			FileWriter writer = new FileWriter(rulepath);
 			JSONObject job = new JSONObject();
 			job.put("Rule", DBClient.getRuleList());
 			writer.write(job.toJSONString());
 			writer.flush();
 			writer.close();
-			CoreController.sparkStart();
+			//CoreController.sparkStart();
 		}
 		catch(IOException e)
 		{
@@ -421,11 +421,11 @@ public class LogaxController
 	{
 		DBClient.removeAllRule();
 		try	{
-			CoreController.sparkStop();
+			//CoreController.sparkStop();
 			FileWriter writer = new FileWriter(rulepath);
 			writer.flush();
 			writer.close();
-			CoreController.sparkStart();
+			//CoreController.sparkStart();
 		}
 		catch(IOException e)
 		{

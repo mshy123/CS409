@@ -7,15 +7,23 @@ public class Tuple implements Serializable {
 	public String content;
 	public int number;
 	public long time;
+	private long id;
+	private static long totalId = 0;
+	
+	public long getId() {
+		return id;
+	}
 	public Tuple( String typeName_ , String content_ ) {
 		typeName = typeName_;
 		content = content_;
 		time = System.currentTimeMillis();
+		id = totalId++;
 	}
 	public Tuple( String typeName_ , int number_ ) {
 		typeName = typeName_;
 		number = number_;
 		time = System.currentTimeMillis();
+		id = totalId++;
 	}
 	
 }
