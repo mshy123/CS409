@@ -78,7 +78,6 @@ public class App {
 	}
 	
 	private static void writeDB (Rule r) {
-		logger.error("write to DB");
 		Mongo mongo = new Mongo("localhost", 27017);
 		DB db = mongo.getDB("test");
 		DBCollection collection = db.getCollection("Rules");
@@ -216,26 +215,26 @@ public class App {
 								switch (result) {
 								case UPDATE:
 									rule.update(type);
-									logger.error("UPDATE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
+									logger.error("UPDATE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " RULE: " + rule.getId());
 //									logger.error("UPDATE: " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
 								case FAIL:
 									if (rule.isBase()) {
-										logger.error("FAIL: " + rule.getId());
+										logger.error("FAIL RULE: " + rule.getId());
 										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
 									}
 									else {
-										logger.error("FAIL: " + rule.getId());
+										logger.error("FAIL RULE: " + rule.getId());
 										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
 									}
 								case TIMEOVER:
 									//remove rule;
-									logger.error("TIMEOVER: " + rule.getId());
+									logger.error("TIMEOVER RULE: " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, rule);
 								case COMPLETE:
 									// remove rule;
 									rule.update(type);
-									logger.error("COMPLETE " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
+									logger.error("COMPLETE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " RULE: " + rule.getId());
 //									logger.error("COMPLETE: " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, rule);
 								}
@@ -267,8 +266,8 @@ public class App {
 												writeDB(t._2);
 												t._2.removeFrom(remainRules);
 											}
+											break;
 										}
-										break;
 									}
 									if ((!temp) && t._2.getCheckedTypes().size() == 1) {
 										remainRules.add(t._2);
