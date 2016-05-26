@@ -251,7 +251,7 @@ Ext.define('logax.view.rule.AddRule', {
 					success:function(result, request) {
 						var job = Ext.JSON.decode(result.responseText);
 						if (!job.success) {
-							Ext.Msg.alert("Fail", "Already exist name");
+							Ext.Msg.alert("Fail", job.message);
 						}
 						else {
 							Ext.Msg.alert("Success", "Add Rule Name " + Ext.getCmp('name').getValue());

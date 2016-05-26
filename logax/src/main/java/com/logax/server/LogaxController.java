@@ -20,6 +20,9 @@ import java.io.*;
 @Controller
 public class LogaxController
 {
+	private String fluentpath = "/Users/hyunhoha/LocalCEP/fluent/fluent.conf";
+	private String rulepath = "Users/hyunhoha/LocalCEP/Rule.json";
+
 	@RequestMapping(value = "/execute", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String execute(@RequestBody String requestString)
@@ -58,7 +61,7 @@ public class LogaxController
 			/* Stop the core process */
 			CoreController.stopCore();
 			/* Edit fluentd File : type */
-			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			writer = new FileWriter(fluentpath);
 			JSONArray jarr = DBClient.getTypeList();
 			for (int i = 0; i < jarr.size(); i++)
 			{
@@ -86,12 +89,12 @@ public class LogaxController
 			writer.write("<match high.**>\n");
 	      	writer.write("  @type               kafka\n");
 	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  default_topic       hightopic\n");
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.write("<match low.**>\n");
 	      	writer.write("  @type               kafka\n");
 	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  default_topic       lowtopic\n");
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.flush();
 			writer.close();
@@ -122,7 +125,7 @@ public class LogaxController
 		try
 		{
 			CoreController.stopCore();
-			FileWriter writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			FileWriter writer = new FileWriter(fluentpath);
 			writer.close();
 			CoreController.startCore();
 		}
@@ -175,7 +178,7 @@ public class LogaxController
 			/* Stop the core process */
 			CoreController.stopCore();
 			/* Edit fluentd File : type */
-			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			writer = new FileWriter(fluentpath);
 			JSONArray jarr = DBClient.getTypeList();
 			for (int i = 0; i < jarr.size(); i++)
 			{
@@ -203,12 +206,12 @@ public class LogaxController
 			writer.write("<match high.**>\n");
 	      	writer.write("  @type               kafka\n");
 	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  default_topic       hightopic\n");
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.write("<match low.**>\n");
 	      	writer.write("  @type               kafka\n");
 	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  default_topic       lowtopic\n");
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.flush();
 			writer.close();
@@ -258,7 +261,7 @@ public class LogaxController
 			/* Stop the core process */
 			CoreController.stopCore();
 			/* Edit fluentd File : type */
-			writer = new FileWriter("/Users/hyunhoha/LocalCEP/DB.txt");
+			writer = new FileWriter(fluentpath);
 			JSONArray jarr = DBClient.getTypeList();
 			for (int i = 0; i < jarr.size(); i++)
 			{
@@ -286,12 +289,12 @@ public class LogaxController
 			writer.write("<match high.**>\n");
 	      	writer.write("  @type               kafka\n");
 	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  default_topic       hightopic\n");
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.write("<match low.**>\n");
 	      	writer.write("  @type               kafka\n");
 	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       apache_error_topic\n");
+		    writer.write("  default_topic       lowtopic\n");
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.flush();
 			writer.close();
@@ -360,6 +363,7 @@ public class LogaxController
 		{
 			JSONObject success = new JSONObject();
 			success.put("success", false);
+			success.put("message", "Already Exist Name");
 			return success.toJSONString();
 		}
 		
@@ -367,7 +371,7 @@ public class LogaxController
 
 		try	{
 			CoreController.sparkStop();
-			FileWriter writer = new FileWriter("/Users/hyunhoha/LocalCEP/Rule.json");
+			FileWriter writer = new FileWriter(rulepath);
 			JSONObject job = new JSONObject();
 			job.put("Rule", DBClient.getRuleList());
 			writer.write(job.toJSONString());
@@ -377,11 +381,15 @@ public class LogaxController
 		}
 		catch(IOException e)
 		{
-			return "{\"error\":\"Bad file out\"}";
+			JSONObject success = new JSONObject();
+			success.put("success", false);
+			success.put("message", "CEP Engine doesn't work");
+			return success.toJSONString();
 		}
 	
 		JSONObject returnjson = new JSONObject();
 		returnjson.put("success", true);
+		returnjson.put("message", "Success");
 		return returnjson.toJSONString();
 	}
 	
@@ -392,7 +400,7 @@ public class LogaxController
 		DBClient.removeRule(requestString);
 		try	{
 			CoreController.sparkStop();
-			FileWriter writer = new FileWriter("/Users/hyunhoha/LocalCEP/Rule.json");
+			FileWriter writer = new FileWriter(rulepath);
 			JSONObject job = new JSONObject();
 			job.put("Rule", DBClient.getRuleList());
 			writer.write(job.toJSONString());
@@ -414,7 +422,7 @@ public class LogaxController
 		DBClient.removeAllRule();
 		try	{
 			CoreController.sparkStop();
-			FileWriter writer = new FileWriter("/Users/hyunhoha/LocalCEP/Rule.json");
+			FileWriter writer = new FileWriter(rulepath);
 			writer.flush();
 			writer.close();
 			CoreController.sparkStart();

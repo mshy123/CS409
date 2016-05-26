@@ -1,63 +1,18 @@
 <source>
   @type tail
-  format asdfeerqr
+  format /^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "GET(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$/
   path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachegetpacket2
-  tag high.apachegetpacket2
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apacheget
+  tag high.apacheget
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 
 <source>
   @type tail
-  format client,host,GET
+  format /^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "POST(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$/
   path /var/log/apache2/access_log
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachegetpacket1
-  tag high.apachegetpacket1
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format sdf
-  path qwe
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/SSS
-  tag high.SSS
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format sdf
-  path qwe
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/SSSweq
-  tag high.SSSweq
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format adf
-  path qwe
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/deq
-  tag high.deq
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format qewr
-  path eeq
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/eqrwe
-  tag high.eqrwe
-  time_format %d/%b/%Y:%H:%M:%S %z
-</source>
-
-<source>
-  @type tail
-  format eqw
-  path eqrqwe
-  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/showme
-  tag low.showme
+  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/apachepost
+  tag low.apachepost
   time_format %d/%b/%Y:%H:%M:%S %z
 </source>
 
