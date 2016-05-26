@@ -167,7 +167,7 @@ public class Rule implements Serializable{
 
 	
 	public Boolean checkComplete() {
-		return checkedTypes.size() == types.size();
+		return checkedTypes.size() >= types.size();
 	}
 	
 	public Boolean isBase() {
@@ -182,5 +182,18 @@ public class Rule implements Serializable{
 			}
 		}
 		return rules;
+	}
+	
+	public void union (Rule r) {
+		for (Tuple t1 : r.getCheckedTypes()) {
+			Boolean temp = false;
+			for (Tuple t2 : checkedTypes) {
+				if (t1.getId() == t2.getId()) {
+					temp = true;
+					break;
+				}
+			}
+			if (!temp) this.update(t1);
+		}
 	}
 }

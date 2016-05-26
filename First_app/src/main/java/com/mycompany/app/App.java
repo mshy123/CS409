@@ -76,6 +76,27 @@ public class App {
 
 	private App() {
 	}
+	
+	private static void writeDB (Rule r) {
+		
+		Mongo mongo = new Mongo("localhost", 27017);
+		DB db = mongo.getDB("test");
+		DBCollection collection = db.getCollection("Rules");
+		BasicDBObject document = new BasicDBObject();
+		document.put("name", r.getName());
+
+		ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
+		for (Tuple t : r.getCheckedTypes()) {
+			BasicDBObject tmp = new BasicDBObject();
+			tmp.put("name", t.typeName);
+			tmp.put("content", t.content);
+			types.add(tmp);
+		}
+		document.put("types", types);
+
+		collection.insert(document);
+		mongo.close();
+	}
 
 	public static void main(String[] args) {
 		if (args.length < 4) {
@@ -229,29 +250,20 @@ public class App {
 							public void call(Tuple2<resultCode, Rule> t) throws Exception {
 								// TODO Auto-generated method stub
 								if (t._1 == resultCode.COMPLETE) {
-									Mongo mongo = new Mongo("localhost", 27017);
-									DB db = mongo.getDB("test");
-									DBCollection collection = db.getCollection("Rules");
-									BasicDBObject document = new BasicDBObject();
-									document.put("name", t._2.getName());
-
-									ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
-									for (Tuple r : t._2.getCheckedTypes()) {
-										BasicDBObject tmp = new BasicDBObject();
-										tmp.put("name", r.typeName);
-										tmp.put("content", r.content);
-										types.add(tmp);
-									}
-									document.put("types", types);
-
-									collection.insert(document);
-									mongo.close();
-
+									writeDB(t._2);
 									t._2.removeFrom(remainRules);
 								}
 								else if (t._1 == resultCode.UPDATE) {
-									t._2.removeFrom(remainRules);
-									remainRules.add(t._2);
+									for (Rule r : remainRules) {
+										if (r.getId() == t._2.getId()) {
+											r.union(t._2);
+											if (r.checkComplete()) {
+												writeDB(t._2);
+												t._2.removeFrom(remainRules);
+											}
+											break;
+										}
+									}
 								}
 								else if (t._1 == resultCode.TIMEOVER) {
 									t._2.removeFrom(remainRules);
