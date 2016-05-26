@@ -147,7 +147,6 @@ public class App {
 
 		JavaDStream<String> lines = messages.map(new Function<Tuple2<String, String>, String>() {
 			public String call(Tuple2<String, String> tuple2) {
-				logger.error("1");
 				return tuple2._2();
 			}
 		});
@@ -155,7 +154,6 @@ public class App {
 		JavaPairDStream<String, Rule> typeRulePairDStream = lines.transformToPair(
 				new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
 					public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
-						logger.error("2");
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
@@ -169,7 +167,6 @@ public class App {
 				new Function<JavaPairRDD <String, Rule>, JavaPairRDD<resultCode, Rule>> () {
 					public JavaPairRDD<resultCode, Rule> call(JavaPairRDD<String, Rule> v1) {
 						// TODO Auto-generated method stub
-						logger.error("3");
 						return v1.mapToPair(new PairFunction<Tuple2<String,Rule>, resultCode, Rule> () {
 							public Tuple2<resultCode, Rule> call(Tuple2<String, Rule> v1) throws Exception {
 								// TODO Auto-generated method stub
@@ -196,10 +193,10 @@ public class App {
 								switch (result) {
 								case UPDATE:
 									rule.update(type);
-									logger.error("3 UPDATE at " + type.typeName + " " + rule);
+									logger.error("UPDATE " + type.typeName + " " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
 								case FAIL:
-									logger.error("3 FAIL at " + type.typeName + " " + rule);
+									logger.error("FAIL " + type.typeName + " " + rule.getId());
 									if (rule.isBase()) {
 										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
 									}
@@ -208,11 +205,11 @@ public class App {
 									}
 								case TIMEOVER:
 									//remove rule;
-									logger.error("3 TIMEOVER at " + type.typeName + " " + rule);
+									logger.error("TIMEOVER " + type.typeName + " " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, rule);
 								case COMPLETE:
 									// remove rule;
-									logger.error("3 COMPLETE at " + type.typeName + " " + rule);
+									logger.error("COMPLETE " + type.typeName + " " + rule.getId());
 									rule.update(type);
 									// operation on complete rule including saving to DB
 									return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, rule);
@@ -228,11 +225,9 @@ public class App {
 				new VoidFunction<JavaPairRDD<resultCode, Rule>> (){
 					public void call(JavaPairRDD<resultCode, Rule> t) throws Exception {
 						// TODO Auto-generated method stub
-						logger.error("5");
 						t.foreach( new VoidFunction<Tuple2<resultCode, Rule>> () {
 							public void call(Tuple2<resultCode, Rule> t) throws Exception {
 								// TODO Auto-generated method stub
-								logger.error("5-1");
 								if (t._1 == resultCode.COMPLETE) {
 									Mongo mongo = new Mongo("localhost", 27017);
 									DB db = mongo.getDB("test");

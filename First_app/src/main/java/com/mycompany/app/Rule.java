@@ -60,9 +60,12 @@ public class Rule implements Serializable{
 		if( birthTime != 0 && System.currentTimeMillis() > birthTime + duration ) {
 			return resultCode.TIMEOVER;
 		}
+		if( checkedTypes.size() >= types.size()) {
+			 return resultCode.COMPLETE;
+		}
 		if( ordered) {
 			if( type.typeName.equals(types.get( checkedTypes.size() ).typeName )) {
-				if( checkedTypes.size() == types.size() - 1 ) {
+				if( checkedTypes.size() >= types.size() - 1 ) {
 					 return resultCode.COMPLETE;
 				}
 				if( attributeList.size() == 0 ) {
@@ -88,6 +91,9 @@ public class Rule implements Serializable{
 				}
 			}
 		} else {
+			if( checkedTypes.size() >= types.size() ) {
+				 return resultCode.COMPLETE;
+			}
 			ArrayList<Tuple> temp1 = new ArrayList<Tuple>();
 			ArrayList<Tuple> temp2 = new ArrayList<Tuple>();
 			temp1.addAll(types);
