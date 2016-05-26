@@ -51,6 +51,10 @@ public class Rule implements Serializable{
 	public ArrayList<Tuple> getCheckedTypes() {
 		return checkedTypes;
 	}
+	
+	public ArrayList<Tuple> getTypes() {
+		return types;
+	}
 
 	public long getId() {
 		return id;
@@ -124,7 +128,7 @@ public class Rule implements Serializable{
 			
 			for( int i = 0; i < temp1.size(); i++ ) {
 				if( temp1.get(i).typeName.equals(type.typeName )) {
-					if( checkedTypes.size() == types.size() - 1 ) {
+					if( checkedTypes.size() >= types.size() - 1 ) {
 						 return resultCode.COMPLETE;
 					}
 					if( attributeList.size() == 0 ) {
@@ -143,7 +147,7 @@ public class Rule implements Serializable{
 									return resultCode.FAIL;
 								}
 							}
-							if( checkedTypes.size() == types.size() - 1 ) {
+							if( checkedTypes.size() >= types.size() - 1 ) {
 								 return resultCode.COMPLETE;
 							}
 							return resultCode.UPDATE;

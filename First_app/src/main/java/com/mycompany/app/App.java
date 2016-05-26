@@ -78,7 +78,7 @@ public class App {
 	}
 	
 	private static void writeDB (Rule r) {
-		
+		logger.error("write to DB");
 		Mongo mongo = new Mongo("localhost", 27017);
 		DB db = mongo.getDB("test");
 		DBCollection collection = db.getCollection("Rules");
@@ -178,11 +178,13 @@ public class App {
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
+						logger.error("2 size of baseRDD: " + baseRulesRDD.count());
+						logger.error("2 size of remainRulesRDD: " + remainRulesRDD.count());
 						logger.error("2 size of rulesRDD: " + rulesRDD.count());
 						logger.error("2 size of lines: " + t.count());
 						return t.cartesian(rulesRDD);
 					}
-				});		
+				});
 
 		JavaPairDStream<resultCode, Rule> resultRuleDstream = typeRulePairDStream.transformToPair(
 				new Function<JavaPairRDD <String, Rule>, JavaPairRDD<resultCode, Rule>> () {
@@ -214,25 +216,27 @@ public class App {
 								switch (result) {
 								case UPDATE:
 									rule.update(type);
-									logger.error("UPDATE " + type.typeName + " " + rule.getId());
+									logger.error("UPDATE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
+//									logger.error("UPDATE: " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
 								case FAIL:
-									logger.error("FAIL " + type.typeName + " " + rule.getId());
 									if (rule.isBase()) {
+										logger.error("FAIL: " + rule.getId());
 										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
 									}
 									else {
+										logger.error("FAIL: " + rule.getId());
 										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
 									}
 								case TIMEOVER:
 									//remove rule;
-									logger.error("TIMEOVER " + type.typeName + " " + rule.getId());
+									logger.error("TIMEOVER: " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, rule);
 								case COMPLETE:
 									// remove rule;
-									logger.error("COMPLETE " + type.typeName + " " + rule.getId());
 									rule.update(type);
-									// operation on complete rule including saving to DB
+									logger.error("COMPLETE " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
+//									logger.error("COMPLETE: " + rule.getId());
 									return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, rule);
 								}
 
@@ -254,15 +258,20 @@ public class App {
 									t._2.removeFrom(remainRules);
 								}
 								else if (t._1 == resultCode.UPDATE) {
+									boolean temp = false;
 									for (Rule r : remainRules) {
 										if (r.getId() == t._2.getId()) {
 											r.union(t._2);
+											temp = true;
 											if (r.checkComplete()) {
 												writeDB(t._2);
 												t._2.removeFrom(remainRules);
 											}
-											break;
 										}
+										break;
+									}
+									if ((!temp) && t._2.getCheckedTypes().size() == 1) {
+										remainRules.add(t._2);
 									}
 								}
 								else if (t._1 == resultCode.TIMEOVER) {
@@ -273,8 +282,8 @@ public class App {
 					}
 				});
 
-		//		typeRulePairDStream.print();
-		resultRuleDstream.print();
+//		typeRulePairDStream.print();
+//		resultRuleDstream.print();
 		jssc.start();
 		jssc.awaitTermination();
 	}
