@@ -98,8 +98,7 @@ Ext.define('logax.view.rulelist.RuleContainer', {
 								view.up('form').getForm().load({
 									url: 'api/getrule/' + rec.get('text'),
 									params: rec.get('text'),
-									method: 'GET',
-									waitMsg: 'Loading data...'
+									method: 'GET'
 								});
 							},
 							failure:function(result, request) {

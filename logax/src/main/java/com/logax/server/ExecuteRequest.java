@@ -22,13 +22,13 @@ public class ExecuteRequest
 		path = null;
 	}
 
-	public void print(FileWriter writer) throws IOException
+	public void print(FileWriter writer, String globalposfile) throws IOException
 	{
 		writer.write("<source>\n");
 		writer.write("  @type tail\n");
 		writer.write("  format " + typeregex + "\n");
 		writer.write("  path " + path + "\n");
-		writer.write("  pos_file /Users/hyunhoha/LocalCEP/fluent/pos/" + typename + "\n");
+		writer.write("  pos_file " + globalposfile + typename + "\n");
 		writer.write("  tag " + priority + "." + typename + "\n");
 		writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
 		writer.write("</source>" + "\n\n");
@@ -37,6 +37,11 @@ public class ExecuteRequest
 	public int addDBType()
 	{
 		return DBClient.addType(typename, typeregex, priority, path);
+	}
+	
+	public int editDBType()
+	{
+		return DBClient.editType(typename, typeregex, priority, path);
 	}
 
 	public void removeDBType()

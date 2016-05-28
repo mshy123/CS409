@@ -200,7 +200,7 @@ Ext.define('logax.view.rule.AddRule', {
 		},
 		{
 			xtype: 'button',
-			text: 'Refresh',
+			text: 'Refresh Type Field',
 			handler: function() {
 				var typelistnum = logax.store.TypeNumber.typelist;
 				for (i = 0; i < typelistnum.length; i++) {
@@ -211,6 +211,8 @@ Ext.define('logax.view.rule.AddRule', {
 		{
 			xtype: 'button',
 			text: 'Commit',
+			formBind: true,
+			disabled: true,
 			handler: function() {
 				var me = this;
 				var i;

@@ -222,7 +222,15 @@
         {
             "path": "app.js",
             "bundle": true
-        }
+        },
+		{
+			"path": "resources/js/d3.min.js",
+			"bundle": false
+		},
+		{
+			"path": "resources/js/nv.d3.min.js",
+			"bundle": false
+		}
     ],
 
     
@@ -260,7 +268,15 @@
             "path": "${build.out.css.path}",
             "bundle": true,
             "exclude": ["fashion"]
-        }
+        },
+		{
+			"path": "bootstrap.css",
+			"bootstrap": true
+		},
+		{
+			"path": "resources/css/nv.d3.css",
+			"bootstrap": false
+		}
     ],
 
     /**
