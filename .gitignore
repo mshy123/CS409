@@ -7,6 +7,9 @@ spark/*
 First_app/target/
 logax/target/
 
+### fluent file
+fluent/pos/
+
 ### all the jar file
 .jar
 
