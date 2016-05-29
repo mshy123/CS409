@@ -3,37 +3,37 @@ from optparse import OptionParser
 
 
 def generate(argv_list):
-    time_interval = int(argv_list.time_interval)
-    num_of_packet = int(argv_list.number)
-    content_of_packet=None
-    if argv_list.content:
-        content_of_packet = argv_list.content
-    if argv_list.file_path and not content_of_packet:
-        f = open(argv_list.file_path)
-        content_of_packet = f.read()
-        f.close()
-    if not content_of_packet:
-        exit(-1)
+	time_interval = int(argv_list.time_interval)
+	num_of_packet = int(argv_list.number)
+	content_of_packet=None
+	if argv_list.content:
+		content_of_packet = argv_list.content
+	if argv_list.file_path and not content_of_packet:
+		f = open(argv_list.file_path)
+		content_of_packet = f.read()
+		f.close()
+	if not content_of_packet:
+		exit(-1)
 
-    i = 1
-    print "You can quit this program by Ctrl-C"
-    while True:
-        start = time.time()
-        f = open("PATH_OF_PACKET","a")
-        for j in range(num_of_packet):
-            if argv_list.file_path:
-                f.write(content_of_packet)
-            elif argv_list.content:
-                f.write(content_of_packet+"\n")
-
-        while time.time()-start < time_interval:
-            continue
-        f.close()
-        print "packet generation "+str(i)+" times finished!"
-        try:
-            i+=1
-        except KeyBoardInterrupt:
-            break
+	i = 1
+	k = 0
+	print "You can quit this program by Ctrl-C"
+	while True:
+		start = time.time()
+		f = open("/var/log/apache2/access_log","a")
+		for j in range(num_of_packet):
+			while time.time()-start < time_interval:
+				continue
+			if argv_list.file_path:
+				f.write(content_of_packet)
+			elif argv_list.content:
+				f.write(content_of_packet+"\n")
+		f.close()
+		print "packet generation "+str(i)+" times finished!"
+		try:
+			i+=1
+		except KeyBoardInterrupt:
+			exit(-1)
 
 parser = OptionParser(usage = "usage: %prog [options] filename", 
                       version = "%prog 1.0")
