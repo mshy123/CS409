@@ -22,7 +22,7 @@ public class Rule implements Serializable{
 	
 	private ArrayList<String> attributeList;
 	
-	public enum resultCode { UPDATE, TIMEOVER, COMPLETE, FAIL } 
+	public enum RESULTCODE { UPDATE, TIMEOVER, COMPLETE, FAIL } 
 	
 	public Rule( String name_ , long duration_ , Boolean ordered_, ArrayList<Tuple> types_,
 			ArrayList<String> attributeList_) {
@@ -51,24 +51,34 @@ public class Rule implements Serializable{
 		return types;
 	}
 
-	public resultCode check( Tuple type) {
+	
+	
+	public void setBirthTime(long birthTime) {
+		this.birthTime = birthTime;
+	}
+
+	public void setCheckedTypes(ArrayList<Tuple> checkedTypes) {
+		this.checkedTypes = checkedTypes;
+	}
+
+	public RESULTCODE check( Tuple type) {
 		if( birthTime != 0 && System.currentTimeMillis() > birthTime + duration ) {
-			return resultCode.TIMEOVER;
+			return RESULTCODE.TIMEOVER;
 		}
 		if( checkedTypes.size() >= types.size()) {
-			 return resultCode.COMPLETE;
+			 return RESULTCODE.COMPLETE;
 		}
 		if( ordered) {
 			if( type.typeName.equals(types.get( checkedTypes.size() ).typeName )) {
 				if( checkedTypes.size() >= types.size() - 1 ) {
-					 return resultCode.COMPLETE;
+					 return RESULTCODE.COMPLETE;
 				}
 				if( attributeList.size() == 0 ) {
-					return resultCode.UPDATE;
+					return RESULTCODE.UPDATE;
 				} else {
 					JSONParser parser = new JSONParser();
 					if(checkedTypes.size() == 0) {
-						return resultCode.UPDATE;
+						return RESULTCODE.UPDATE;
 					}
 					try {
 						JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
@@ -76,10 +86,10 @@ public class Rule implements Serializable{
 						for( int i = 0 ; i < attributeList.size() ; i ++ ) {
 							if( !targetJson.get(attributeList.get(i)).toString().equals(
 									compareJson.get(attributeList.get(i)).toString() )){
-								return resultCode.FAIL;
+								return RESULTCODE.FAIL;
 							}
 						}
-						return resultCode.UPDATE;
+						return RESULTCODE.UPDATE;
 					} catch (ParseException e) {
 						e.printStackTrace();
 					}
@@ -87,7 +97,7 @@ public class Rule implements Serializable{
 			}
 		} else {
 			if( checkedTypes.size() >= types.size() ) {
-				 return resultCode.COMPLETE;
+				 return RESULTCODE.COMPLETE;
 			}
 			ArrayList<Tuple> temp1 = new ArrayList<Tuple>();
 			ArrayList<Tuple> temp2 = new ArrayList<Tuple>();
@@ -120,14 +130,14 @@ public class Rule implements Serializable{
 			for( int i = 0; i < temp1.size(); i++ ) {
 				if( temp1.get(i).typeName.equals(type.typeName )) {
 					if( checkedTypes.size() >= types.size() - 1 ) {
-						 return resultCode.COMPLETE;
+						 return RESULTCODE.COMPLETE;
 					}
 					if( attributeList.size() == 0 ) {
-						return resultCode.UPDATE;
+						return RESULTCODE.UPDATE;
 					} else {
 						JSONParser parser = new JSONParser();
 						if(checkedTypes.size() == 0) {
-							return resultCode.UPDATE;
+							return RESULTCODE.UPDATE;
 						}
 						try {
 							JSONObject compareJson = (JSONObject)parser.parse(checkedTypes.get(0).content);
@@ -135,13 +145,13 @@ public class Rule implements Serializable{
 							for( int j = 0 ; j < attributeList.size() ; j++ ) {
 								if( !targetJson.get(attributeList.get(j)).toString().equals(
 										compareJson.get(attributeList.get(j)).toString() )){
-									return resultCode.FAIL;
+									return RESULTCODE.FAIL;
 								}
 							}
 							if( checkedTypes.size() >= types.size() - 1 ) {
-								 return resultCode.COMPLETE;
+								 return RESULTCODE.COMPLETE;
 							}
-							return resultCode.UPDATE;
+							return RESULTCODE.UPDATE;
 						} catch (ParseException e) {
 							e.printStackTrace();
 						}
@@ -149,7 +159,7 @@ public class Rule implements Serializable{
 				}
 			}
 		}
-		return resultCode.FAIL;
+		return RESULTCODE.FAIL;
 	 }
 	
 	public void update( Tuple type ) {
@@ -166,5 +176,33 @@ public class Rule implements Serializable{
 	
 	public Boolean isBase() {
 		return checkedTypes.size() == 0;
+	}
+	
+	public Rule ruleClone() {
+		String _name = name;
+		long _birthTime = birthTime;
+		long _duration = duration;
+		
+		ArrayList<Tuple> _types = new ArrayList<Tuple>();
+		for (Tuple t : types) {
+			_types.add(t.tupleClone());
+		}
+		
+		ArrayList<Tuple> _checkedTypes = new ArrayList<Tuple>();
+		for (Tuple t : checkedTypes) {
+			_checkedTypes.add(t.tupleClone());
+		}
+		
+		boolean _ordered = ordered;
+
+		ArrayList<String> _attributedList = new ArrayList<String>();
+		_attributedList.addAll(attributeList);
+		
+		
+		Rule r = new Rule(_name, _duration, _ordered, _types, _attributedList); 
+		r.setBirthTime(_birthTime);
+		r.setCheckedTypes(_checkedTypes);
+		
+		return r;
 	}
 }
