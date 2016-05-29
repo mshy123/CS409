@@ -43,8 +43,7 @@ Ext.define('logax.view.dashboard.Type', {
 						view.up('form').getForm().load({
 							url: 'api/gettype/' + rec.get('text'),
 							params: rec.get('text'),
-							method: 'GET',
-							waitMsg: 'Loading data...'
+							method: 'GET'
 						});
 					}
 				}
@@ -59,27 +58,31 @@ Ext.define('logax.view.dashboard.Type', {
 			items: [
 				{
 					fieldLabel: 'Type Name',
-					id: 'typename'
+					id: 'typename',
+					allowBlank: false
 				},
 				{
 					fieldLabel: 'Type Regex',
-					id: 'typeregex'
+					id: 'typeregex',
+					allowBlank: false
 				},
 				{
 					fieldLabel: 'Path',
-					id: 'path'
+					id: 'path',
+					allowBlank: false
 				},
 				{
 					xtype: 'radiogroup',
 					fieldLabel: 'Priority',
 					columns: 3,
 					defaults: {
-						name: 'priority' //Each radio has the same name so the browser will make sure only one is checked at once
+						name: 'priority'
 					},
 					items: [{
 						   inputValue: 'high',
 						   boxLabel: 'high',
-						   id: 'high'
+						   id: 'high',
+						   checked: true
 					   }, {
 						   inputValue: 'low',
 						   boxLabel: 'low',
@@ -88,7 +91,45 @@ Ext.define('logax.view.dashboard.Type', {
 				},
 				{
 					xtype: 'button',
+					text: 'Add',
+					formBind: true,
+					disabled: true,
+					handler: function() {
+						var me = this;
+						var jsonRequest = 
+						{
+							"typename":Ext.getCmp('typename').getValue(),
+							"typeregex":Ext.getCmp('typeregex').getValue(),
+							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
+							"path":Ext.getCmp('path').getValue()
+						};
+						Ext.Ajax.request({
+							url:"api/addtype",
+							method:"POST",
+							jsonData: jsonRequest,
+
+							success:function(result, request){
+								var job = Ext.JSON.decode(result.responseText);
+								if (!job.success) {
+									Ext.Msg.alert("Fail", job.message);
+								}
+								else {
+									Ext.Msg.alert("Success", "Add Type Name " + Ext.getCmp('typename').getValue());
+								}
+
+							},
+							failure:function(result, request) {
+								Ext.Msg.alert("Failed");
+							}
+						});
+						me.up('form').down('treepanel').getStore().load();
+					}
+				},
+				{
+					xtype: 'button',
 					text: 'Edit',
+					formBind: true,
+					disabled: true,
 					handler: function() {
 						var me = this;
 						var jsonRequest = 
@@ -104,13 +145,19 @@ Ext.define('logax.view.dashboard.Type', {
 							jsonData: jsonRequest,
 
 							success:function(result, request){
-								Ext.Msg.alert("Success", "Edit Type Name " + Ext.getCmp('typename').getValue());
+								var job = Ext.JSON.decode(result.responseText);
+								if (!job.success) {
+									Ext.Msg.alert("Fail", job.message);
+								}
+								else {
+									Ext.Msg.alert("Success", "Edit Type Name " + Ext.getCmp('typename').getValue());
+								}
 							},
 							failure:function(result, request){
 								Ext.Msg.alert("Failed");
 							}
 						});
-
+						me.up('form').down('treepanel').getStore().load();
 					}
 				},
 				{
@@ -126,54 +173,20 @@ Ext.define('logax.view.dashboard.Type', {
 							"path":Ext.getCmp('path').getValue()
 						};
 						Ext.Ajax.request({
-							url:"api/delete",
-							method:"POST",
+							url: Ext.String.format("api/deletetype/" + Ext.getCmp('typename').getValue()),
+							method:"GET",
 							jsonData: jsonRequest,
 
-							success:function(result, request){
+							success:function(result, request) {
 								var job = Ext.JSON.decode(result.responseText);
 								if (!job.success) {
-									Ext.Msg.alert("Fail", "This type is bind with Rule");
+									Ext.Msg.alert("Fail", job.message);
 								}
 								else {
 									Ext.Msg.alert("Success", "Delete Type Name " + Ext.getCmp('typename').getValue());
 								}
 							},
-							failure:function(result, request){
-										Ext.Msg.alert("Failed");
-									}
-						});
-						me.up('form').down('treepanel').getStore().load();
-					}
-				},
-				{
-					xtype: 'button',
-					text: 'Add',
-					handler: function() {
-						var me = this;
-						var jsonRequest = 
-						{
-							"typename":Ext.getCmp('typename').getValue(),
-							"typeregex":Ext.getCmp('typeregex').getValue(),
-							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
-							"path":Ext.getCmp('path').getValue()
-						};
-						Ext.Ajax.request({
-							url:"api/execute",
-							method:"POST",
-							jsonData: jsonRequest,
-
-							success:function(result, request){
-								var job = Ext.JSON.decode(result.responseText);
-								if (!job.success) {
-									Ext.Msg.alert("Fail", "Already Exist " + Ext.getCmp('typename').getValue());
-								}
-								else {
-									Ext.Msg.alert("Success", "Add Type Name " + Ext.getCmp('typename').getValue());
-								}
-
-							},
-							failure:function(result, request){
+							failure:function(result, request) {
 								Ext.Msg.alert("Failed");
 							}
 						});
@@ -188,6 +201,7 @@ Ext.define('logax.view.dashboard.Type', {
 			text: 'Refresh',
 			handler: function() {
 				var me = this;
+				me.up('form').getForm().reset();
 				me.up('form').down('treepanel').getStore().load();
 			}
 		},
@@ -204,7 +218,7 @@ Ext.define('logax.view.dashboard.Type', {
 					success:function(result, request){
 						var job = Ext.JSON.decode(result.responseText);
 						if (!job.success) {
-							Ext.Msg.alert("Fail", "Type is bind with Rule");
+							Ext.Msg.alert("Fail", job.message);
 						}
 						else {
 							Ext.Msg.alert("Success", "Success to delete all type");

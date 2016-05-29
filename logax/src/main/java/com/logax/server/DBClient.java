@@ -149,6 +149,29 @@ public class DBClient
 		return 0;
 	}
 	
+	public static int editType(String typename, String typeregex, String priority, String path)
+	{
+		int exist = 0;
+		init();
+		Document type = new Document()
+			.append("typename", typename)
+			.append("typeregex", typeregex)
+			.append("priority", priority)
+			.append("path", path);
+		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
+		for (Document document : iterable)
+		{
+			exist = 1;
+		}
+
+		if (exist == 1) {
+			db.getCollection("type").deleteMany(new Document("typename", typename));
+			db.getCollection("type").insertOne(type);
+			return 0;
+		}
+		return -1;
+	}
+	
 	public static void removeType(String typename)
 	{
 		init();

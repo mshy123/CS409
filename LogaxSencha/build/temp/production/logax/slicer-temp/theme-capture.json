@@ -1596,7 +1596,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-default-framed-left-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-default-framed-left-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-default-framed-left-sides.gif"
       }
     },
@@ -1628,7 +1627,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-default-framed-right-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-default-framed-right-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-default-framed-right-sides.gif"
       }
     },
@@ -1722,7 +1720,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-default-framed-collapsed-left-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-default-framed-collapsed-left-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-default-framed-collapsed-left-sides.gif"
       }
     },
@@ -1754,7 +1751,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-default-framed-collapsed-right-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-default-framed-collapsed-right-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-default-framed-collapsed-right-sides.gif"
       }
     },
@@ -1901,7 +1897,6 @@
       },
       "slices": {
         "corners": "images/window-header/window-header-default-left-corners.gif",
-        "corners_rtl": "images/window-header/window-header-default-left-corners-rtl.gif",
         "sides": "images/window-header/window-header-default-left-sides.gif"
       }
     },
@@ -1933,7 +1928,6 @@
       },
       "slices": {
         "corners": "images/window-header/window-header-default-right-corners.gif",
-        "corners_rtl": "images/window-header/window-header-default-right-corners-rtl.gif",
         "sides": "images/window-header/window-header-default-right-sides.gif"
       }
     },
@@ -2027,7 +2021,6 @@
       },
       "slices": {
         "corners": "images/window-header/window-header-default-collapsed-left-corners.gif",
-        "corners_rtl": "images/window-header/window-header-default-collapsed-left-corners-rtl.gif",
         "sides": "images/window-header/window-header-default-collapsed-left-sides.gif"
       }
     },
@@ -2059,7 +2052,6 @@
       },
       "slices": {
         "corners": "images/window-header/window-header-default-collapsed-right-corners.gif",
-        "corners_rtl": "images/window-header/window-header-default-collapsed-right-corners-rtl.gif",
         "sides": "images/window-header/window-header-default-collapsed-right-sides.gif"
       }
     },
@@ -3579,7 +3571,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-light-framed-left-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-light-framed-left-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-light-framed-left-sides.gif"
       }
     },
@@ -3611,7 +3602,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-light-framed-right-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-light-framed-right-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-light-framed-right-sides.gif"
       }
     },
@@ -3705,7 +3695,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-light-framed-collapsed-left-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-light-framed-collapsed-left-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-light-framed-collapsed-left-sides.gif"
       }
     },
@@ -3737,7 +3726,6 @@
       },
       "slices": {
         "corners": "images/panel-header/panel-header-light-framed-collapsed-right-corners.gif",
-        "corners_rtl": "images/panel-header/panel-header-light-framed-collapsed-right-corners-rtl.gif",
         "sides": "images/panel-header/panel-header-light-framed-collapsed-right-sides.gif"
       }
     },

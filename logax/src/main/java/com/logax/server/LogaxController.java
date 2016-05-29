@@ -22,41 +22,49 @@ public class LogaxController
 {
 	private String fluentpath = "/Users/hyunhoha/LocalCEP/fluent/fluent.conf";
 	private String rulepath = "/Users/hyunhoha/LocalCEP/Rule.json";
+	private String pos_file = "/Users/hyunhoha/LocalCEP/fluent/pos/";
 
-	@RequestMapping(value = "/execute", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
-	@ResponseBody
-	public String execute(@RequestBody String requestString)
+	public String resultMessage(int i, String message)
 	{
-		JSONParser parser = new JSONParser();
-		JSONObject json = null;
-		try
-		{
-			json = (JSONObject)parser.parse(requestString);
-		}
-		catch(ParseException e)
-		{
-			return "{\"error\":\"bad request\"}";
+		JSONObject job = new JSONObject();
+		if (i == 0) {
+			job.put("success", false);
+			job.put("message", message);
+			return job.toJSONString();
 		}
 
+		job.put("success", true);
+		job.put("message", message);
+		return job.toJSONString();
+	}
+
+	public String printRule()
+	{
+		try	{
+			//CoreController.sparkStop();
+			FileWriter writer = new FileWriter(rulepath);
+			JSONObject job = new JSONObject();
+			if (DBClient.getRuleList() != null) {
+				job.put("Rule", DBClient.getRuleList());
+				writer.write(job.toJSONString());
+			}
+			writer.flush();
+			writer.close();
+			//CoreController.sparkStart();
+		}
+		catch(IOException e)
+		{
+			return resultMessage(0, "CEP Engine doesn't work or wring in rulepath");
+		}
+	
+		return resultMessage(1, "Success to handle request");
+	}
+
+	public String printFluentd()
+	{
+		FileWriter writer = null;
 		ExecuteRequest request = new ExecuteRequest();
 		
-		try
-		{
-			request.parse(json);
-		}
-		catch(JsonTypeException e)
-		{
-			return "{\"error\":\"bad request\"}";
-		}
-		/* add DB */
-		if (request.addDBType() == -1)
-		{
-			JSONObject returnjson = new JSONObject();
-			returnjson.put("success", false);
-			return returnjson.toJSONString();
-		}
-
-		FileWriter writer = null;
 		try	{	
 			/* Stop the core process */
 			CoreController.stopCore();
@@ -71,9 +79,9 @@ public class LogaxController
 				}
 				catch (JsonTypeException e)
 				{
-					return "{\"error\":\"bad request\"}";
+					return resultMessage(0, "Wrong Input type");
 				}
-				request.print(writer);
+				request.print(writer, pos_file);
 			}
 			/* Edit fluentd File : Add type tag */
 			writer.write("<filter **>\n");
@@ -84,6 +92,19 @@ public class LogaxController
 			writer.write("    content ${record.to_json}\n");
 			writer.write("    type ${tag}\n");
 			writer.write("  </record>\n</filter>\n\n");
+
+			for (int i = 0; i < jarr.size(); i++)
+			{
+				JSONObject job = (JSONObject)jarr.get(i);
+				try {
+					request.parse(job);
+				}
+				catch (JsonTypeException e)
+				{
+					return resultMessage(0, "Wrong Input type");
+				}
+				request.printElastic(writer, pos_file);
+			}
 
 			/* Edit fluentd send to kafka */
 			writer.write("<match high.**>\n");
@@ -102,12 +123,45 @@ public class LogaxController
 		}
 		catch(IOException e)
 		{
-			return "{\"error\":\"Bad file out\"}";
+			return resultMessage(0, "Fail to Start Core or Input file is wrong");
 		}
+
+		return resultMessage(1, "Success to handle request");
+	}
+	
+	
+	@RequestMapping(value = "/addtype", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String addType(@RequestBody String requestString)
+	{
+		JSONParser parser = new JSONParser();
+		JSONObject json = null;
+		try
+		{
+			json = (JSONObject)parser.parse(requestString);
+		}
+		catch(ParseException e)
+		{
+			return resultMessage(0, "Wrong Input type");
+		}
+
+		ExecuteRequest request = new ExecuteRequest();
 		
-		JSONObject returnjson = new JSONObject();
-		returnjson.put("success", true);
-		return returnjson.toJSONString();
+		try
+		{
+			request.parse(json);
+		}
+		catch(JsonTypeException e)
+		{
+			return resultMessage(0, "Wrong Input type");
+		}
+		/* add DB */
+		if (request.addDBType() == -1)
+		{
+			return resultMessage(0, "Already exist name");
+		}
+	
+		return printFluentd();
 	}
 
 	@RequestMapping(value = "/deletealltype", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
@@ -115,122 +169,31 @@ public class LogaxController
 	public String deleteAllType()
 	{
 		if (DBClient.isAllTypeConnect() == -1) {
-			JSONObject returnjson = new JSONObject();
-			returnjson.put("success", false);
-			return returnjson.toJSONString();
+			return resultMessage(0, "Type is connected with rule");
 		}
 		
 		DBClient.removeAllType();
 		
-		try
-		{
-			CoreController.stopCore();
-			FileWriter writer = new FileWriter(fluentpath);
-			writer.close();
-			CoreController.startCore();
-		}
-		catch (IOException e)
-		{
-			return "{\"error\":\"Bad file out\"}";
-		}
-		JSONObject returnjson = new JSONObject();
-		returnjson.put("success", true);
-		return returnjson.toJSONString();
+		return printFluentd();
 	}
 
-	@RequestMapping(value = "/delete", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/deletetype/{requestString}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
 	@ResponseBody
-	public String deleteType(@RequestBody String requestString)
+	public String deleteType(@PathVariable(value="requestString") String requestString)
 	{
-		//TODO : Check this type is used in rule
-		JSONParser parser = new JSONParser();
-		JSONObject json = null;
-		try
-		{
-			json = (JSONObject)parser.parse(requestString);
-		}
-		catch(ParseException e)
-		{
-			return "{\"error\":\"bad request\"}";
+		if (DBClient.isTypeConnect(requestString) == -1) {
+			return resultMessage(0, "Type is connected with rule");
 		}
 
-		ExecuteRequest request = new ExecuteRequest();
-		
-		try
-		{
-			request.parse(json);
-		}
-		catch(JsonTypeException e)
-		{
-			return "{\"error\":\"bad request\"}";
-		}
+		DBClient.removeType(requestString);
 
-		if (DBClient.isTypeConnect((String)json.get("typename")) == -1) {
-			JSONObject returnjson = new JSONObject();
-			returnjson.put("success", false);
-			return returnjson.toJSONString();
-		}
-
-		request.removeDBType();
-
-		FileWriter writer = null;
-		try	{
-			/* Stop the core process */
-			CoreController.stopCore();
-			/* Edit fluentd File : type */
-			writer = new FileWriter(fluentpath);
-			JSONArray jarr = DBClient.getTypeList();
-			for (int i = 0; i < jarr.size(); i++)
-			{
-				JSONObject job = (JSONObject)jarr.get(i);
-				try {
-					request.parse(job);
-				}
-				catch (JsonTypeException e)
-				{
-					return "{\"error\":\"bad request\"}";
-				}
-				request.print(writer);
-			}
-			/* Edit fluentd File : Add type tag */
-			writer.write("<filter **>\n");
-			writer.write("  @type record_transformer\n");
-			writer.write("  enable_ruby true\n");
-			writer.write("  renew_record true\n");
-			writer.write("  <record>\n");
-			writer.write("    content ${record.to_json}\n");
-			writer.write("    type ${tag}\n");
-			writer.write("  </record>\n</filter>\n\n");
-
-			/* Edit fluentd send to kafka */
-			writer.write("<match high.**>\n");
-	      	writer.write("  @type               kafka\n");
-	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       hightopic\n");
-		    writer.write("  output_include_time true\n</match>\n\n");
-			writer.write("<match low.**>\n");
-	      	writer.write("  @type               kafka\n");
-	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       lowtopic\n");
-		    writer.write("  output_include_time true\n</match>\n\n");
-			writer.flush();
-			writer.close();
-			CoreController.startCore();
-		}
-		catch(IOException e)
-		{
-			return "{\"error\":\"Bad file out\"}";
-		}
-		JSONObject returnjson = new JSONObject();
-		returnjson.put("success", true);
-		return returnjson.toJSONString();
+		return printFluentd();
 	}
 
 	@RequestMapping(value = "/edittype", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String editType(@RequestBody String requestString)
 	{
-		//TODO : Check this type is used in rule
 		JSONParser parser = new JSONParser();
 		JSONObject json = null;
 		try
@@ -253,60 +216,12 @@ public class LogaxController
 			return "{\"error\":\"bad request\"}";
 		}
 
-		request.removeDBType();
-		request.addDBType();
-
-		FileWriter writer = null;
-		try	{
-			/* Stop the core process */
-			CoreController.stopCore();
-			/* Edit fluentd File : type */
-			writer = new FileWriter(fluentpath);
-			JSONArray jarr = DBClient.getTypeList();
-			for (int i = 0; i < jarr.size(); i++)
-			{
-				JSONObject job = (JSONObject)jarr.get(i);
-				try {
-					request.parse(job);
-				}
-				catch (JsonTypeException e)
-				{
-					return "{\"error\":\"bad request\"}";
-				}
-				request.print(writer);
-			}
-			/* Edit fluentd File : Add type tag */
-			writer.write("<filter **>\n");
-			writer.write("  @type record_transformer\n");
-			writer.write("  enable_ruby true\n");
-			writer.write("  renew_record true\n");
-			writer.write("  <record>\n");
-			writer.write("    content ${record.to_json}\n");
-			writer.write("    type ${tag}\n");
-			writer.write("  </record>\n</filter>\n\n");
-
-			/* Edit fluentd send to kafka */
-			writer.write("<match high.**>\n");
-	      	writer.write("  @type               kafka\n");
-	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       hightopic\n");
-		    writer.write("  output_include_time true\n</match>\n\n");
-			writer.write("<match low.**>\n");
-	      	writer.write("  @type               kafka\n");
-	        writer.write("  brokers             127.0.0.1:9092\n");
-		    writer.write("  default_topic       lowtopic\n");
-		    writer.write("  output_include_time true\n</match>\n\n");
-			writer.flush();
-			writer.close();
-			CoreController.startCore();
-		}
-		catch(IOException e)
+		if (request.editDBType() != -1)
 		{
-			return "{\"error\":\"Bad file out\"}";
+			return resultMessage(1, "Cannot make type by edit. Use Add command");
 		}
-		JSONObject returnjson = new JSONObject();
-		returnjson.put("success", true);
-		return returnjson.toJSONString();
+
+		return printFluentd();
 	}
 
 	@RequestMapping(value = "/gettype/{requestString}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
@@ -355,42 +270,18 @@ public class LogaxController
 		}
 		catch(ParseException e)
 		{
-			return "{\"error\":\"bad request\"}";
+			return resultMessage(0, "Parse Error");
 		}
 		
 		/* add DB */
 		if (DBClient.addRule(json, (String)json.get("name")) == -1)
 		{
-			JSONObject success = new JSONObject();
-			success.put("success", false);
-			success.put("message", "Already Exist Name");
-			return success.toJSONString();
+			return resultMessage(0, "Already Exist Name");
 		}
 		
 		DBClient.ruleTypeConnect(json);
 
-		try	{
-			//CoreController.sparkStop();
-			FileWriter writer = new FileWriter(rulepath);
-			JSONObject job = new JSONObject();
-			job.put("Rule", DBClient.getRuleList());
-			writer.write(job.toJSONString());
-			writer.flush();
-			writer.close();
-			//CoreController.sparkStart();
-		}
-		catch(IOException e)
-		{
-			JSONObject success = new JSONObject();
-			success.put("success", false);
-			success.put("message", "CEP Engine doesn't work");
-			return success.toJSONString();
-		}
-	
-		JSONObject returnjson = new JSONObject();
-		returnjson.put("success", true);
-		returnjson.put("message", "Success");
-		return returnjson.toJSONString();
+		return printRule();
 	}
 	
 	@RequestMapping(value = "/deleterule/{requestString}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
@@ -398,21 +289,8 @@ public class LogaxController
 	public String deleteRule(@PathVariable(value="requestString") String requestString)
 	{
 		DBClient.removeRule(requestString);
-		try	{
-			//CoreController.sparkStop();
-			FileWriter writer = new FileWriter(rulepath);
-			JSONObject job = new JSONObject();
-			job.put("Rule", DBClient.getRuleList());
-			writer.write(job.toJSONString());
-			writer.flush();
-			writer.close();
-			//CoreController.sparkStart();
-		}
-		catch(IOException e)
-		{
-			return "{\"error\":\"Bad file out\"}";
-		}
-		return "{\"error\":\"null\"}";
+		
+		return printRule();
 	}
 
 	@RequestMapping(value = "/deleteallrule", method = RequestMethod.GET)
@@ -420,18 +298,8 @@ public class LogaxController
 	public String deleteAllRule()
 	{
 		DBClient.removeAllRule();
-		try	{
-			//CoreController.sparkStop();
-			FileWriter writer = new FileWriter(rulepath);
-			writer.flush();
-			writer.close();
-			//CoreController.sparkStart();
-		}
-		catch(IOException e)
-		{
-			return "{\"error\":\"Bad file out\"}";
-		}
-		return "{\"error\":\"null\"}";
+		
+		return printRule();
 	}
 
 	@RequestMapping(value = "/ruletreelist", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
