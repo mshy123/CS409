@@ -8,10 +8,6 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class Rule implements Serializable{
-	public static long totalId = 1;
-	
-	private long id;
-	
 	private String name;
 
 	private long birthTime;
@@ -30,7 +26,6 @@ public class Rule implements Serializable{
 	
 	public Rule( String name_ , long duration_ , Boolean ordered_, ArrayList<Tuple> types_,
 			ArrayList<String> attributeList_) {
-		id = 0;
 		name = name_;
 		duration = duration_;
 		ordered = ordered_;
@@ -54,10 +49,6 @@ public class Rule implements Serializable{
 	
 	public ArrayList<Tuple> getTypes() {
 		return types;
-	}
-
-	public long getId() {
-		return id;
 	}
 
 	public resultCode check( Tuple type) {
@@ -164,7 +155,6 @@ public class Rule implements Serializable{
 	public void update( Tuple type ) {
 		if( checkedTypes.isEmpty() ) {
 			birthTime = System.currentTimeMillis();
-			id = totalId++;
 		}
 		checkedTypes.add(type);
 	}	
@@ -176,28 +166,5 @@ public class Rule implements Serializable{
 	
 	public Boolean isBase() {
 		return checkedTypes.size() == 0;
-	}
-	
-	public ArrayList<Rule> removeFrom (ArrayList<Rule> rules) {
-		for (Rule rule : rules) {
-			if (rule.id == id) {
-				rules.remove(rule);
-				break;
-			}
-		}
-		return rules;
-	}
-	
-	public void union (Rule r) {
-		for (Tuple t1 : r.getCheckedTypes()) {
-			Boolean temp = false;
-			for (Tuple t2 : checkedTypes) {
-				if (t1.getId() == t2.getId()) {
-					temp = true;
-					break;
-				}
-			}
-			if (!temp) this.update(t1);
-		}
 	}
 }

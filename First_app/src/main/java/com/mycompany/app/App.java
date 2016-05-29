@@ -76,9 +76,8 @@ public class App {
 
 	private App() {
 	}
-	
+
 	private static void writeDB (Rule r) {
-		logger.error("write to DB");
 		Mongo mongo = new Mongo("localhost", 27017);
 		DB db = mongo.getDB("test");
 		DBCollection collection = db.getCollection("Rules");
@@ -172,77 +171,150 @@ public class App {
 			}
 		});
 
-		JavaPairDStream<String, Rule> typeRulePairDStream = lines.transformToPair(
-				new Function<JavaRDD<String>, JavaPairRDD <String, Rule>>() {
-					public JavaPairRDD<String, Rule> call (JavaRDD<String> t) {
+//		JavaDStream<ArrayList<String>> packetStream = lines.transform(
+//				new Function<JavaRDD<String>, JavaRDD<ArrayList<String>>>() {
+//
+//					public JavaRDD<ArrayList<String>> call(JavaRDD<String> v1) throws Exception {
+//						// TODO Auto-generated method stub
+//						List<String> a = v1.collect();
+//						ArrayList<ArrayList<String>> packetStreamArray= new ArrayList<ArrayList<String>>();
+//						for (int i=0; i<a.size(); i++) {
+//							packetStreamArray.add(new ArrayList<String>());
+//							for (int j=0; j<=i; j++) {
+//								packetStreamArray.get(i).add(a.get(j));
+//							}
+//						}
+//
+//						return jssc.sparkContext().parallelize(packetStreamArray);
+//					}
+//
+//				});
+//
+//		JavaPairDStream<ArrayList<String>, Rule> typeRulePairDStream = packetStream.transformToPair(
+//				new Function<JavaRDD<ArrayList<String>>, JavaPairRDD <ArrayList<String>, Rule>>() {
+//					public JavaPairRDD<ArrayList<String>, Rule> call (JavaRDD<ArrayList<String>> t) {
+//						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
+//						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
+//						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
+//						logger.error("Size of baseRDD: " + baseRulesRDD.count());
+//						logger.error("Size of remainRulesRDD: " + remainRulesRDD.count());
+//						logger.error("Size of rulesRDD: " + rulesRDD.count());
+//						logger.error("Size of lines: " + t.count());
+//						return t.cartesian(rulesRDD);
+//					}
+//				});
+		
+		JavaPairDStream<ArrayList<String>, Rule> typeRulePairDStream = lines.transformToPair(
+				new Function<JavaRDD<String>, JavaPairRDD <ArrayList<String>, Rule>>() {
+					public JavaPairRDD<ArrayList<String>, Rule> call (JavaRDD<String> t) {
+						List<String> a = t.collect();
+						ArrayList<ArrayList<String>> packetStreamArray= new ArrayList<ArrayList<String>>();
+						for (int i=0; i<a.size(); i++) {
+							packetStreamArray.add(new ArrayList<String>());
+							for (int j=0; j<=i; j++) {
+								packetStreamArray.get(i).add(a.get(j));
+							}
+						}
+						ArrayList<ArrayList<String>> packetStream = new ArrayList<ArrayList<String>>();
+						if (a.size()>0) 
+							packetStream.add(packetStreamArray.get(a.size()-1));
+						
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
-						logger.error("2 size of baseRDD: " + baseRulesRDD.count());
-						logger.error("2 size of remainRulesRDD: " + remainRulesRDD.count());
-						logger.error("2 size of rulesRDD: " + rulesRDD.count());
-						logger.error("2 size of lines: " + t.count());
-						return t.cartesian(rulesRDD);
+						logger.error("Size of baseRDD: " + baseRulesRDD.count());
+						logger.error("Size of remainRulesRDD: " + remainRulesRDD.count());
+						logger.error("Size of rulesRDD: " + rulesRDD.count());
+						logger.error("Size of lines: " + t.count());
+						
+						JavaPairRDD<ArrayList<String>, Rule> baseRulePair =
+								jssc.sparkContext().parallelize(packetStreamArray).cartesian(baseRulesRDD); 
+						
+						JavaPairRDD<ArrayList<String>, Rule> remainRulePair =
+								jssc.sparkContext().parallelize(packetStream).cartesian(remainRulesRDD);
+								
+						
+						return baseRulePair.union(remainRulePair);
 					}
 				});
+		
 
-		JavaPairDStream<resultCode, Rule> resultRuleDstream = typeRulePairDStream.transformToPair(
-				new Function<JavaPairRDD <String, Rule>, JavaPairRDD<resultCode, Rule>> () {
-					public JavaPairRDD<resultCode, Rule> call(JavaPairRDD<String, Rule> v1) {
+		JavaPairDStream<resultCode, Rule> resultRuleDstream = typeRulePairDStream.mapToPair(
+				new PairFunction<Tuple2<ArrayList<String>, Rule>, resultCode, Rule> () {
+
+					public Tuple2<resultCode, Rule> call(Tuple2<ArrayList<String>, Rule> t) throws Exception {
 						// TODO Auto-generated method stub
-						return v1.mapToPair(new PairFunction<Tuple2<String,Rule>, resultCode, Rule> () {
-							public Tuple2<resultCode, Rule> call(Tuple2<String, Rule> v1) throws Exception {
-								// TODO Auto-generated method stub
-								resultCode result = resultCode.FAIL;
+						resultCode result = resultCode.FAIL;
 
-								Rule rule = v1._2;
-								Tuple type = null;
-								try {
-									//{"content":"{\"host\":\"127.0.0.1\",\"user\":\"-\",\"path\":\"/login.php\",\"code\":\"201\",\"size\":\"2691\"}","type":"high.apachepost","time":1463365885}
-									final JSONParser parser = new JSONParser();
-									Object obj = parser.parse(v1._1);
-									JSONObject packet = (JSONObject) obj;
-									type = new Tuple (packet.get("type").toString(), 
-											packet.get("content").toString());
-									result = rule.check(type);
-								} catch (ParseException e) {
-									e.printStackTrace();
-								}
-
-								if (type == null) {
-									return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
-								}
-
-								switch (result) {
-								case UPDATE:
-									rule.update(type);
-									logger.error("UPDATE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
-//									logger.error("UPDATE: " + rule.getId());
-									return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
-								case FAIL:
-									if (rule.isBase()) {
-										logger.error("FAIL: " + rule.getId());
-										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
-									}
-									else {
-										logger.error("FAIL: " + rule.getId());
-										return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
-									}
-								case TIMEOVER:
-									//remove rule;
-									logger.error("TIMEOVER: " + rule.getId());
-									return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, rule);
-								case COMPLETE:
-									// remove rule;
-									rule.update(type);
-									logger.error("COMPLETE " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size() + " " + rule.getId());
-//									logger.error("COMPLETE: " + rule.getId());
-									return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, rule);
-								}
-
-								return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
+						ArrayList<String> packetStream = t._1;
+						Rule rule = t._2;
+						Tuple type = null;
+						Boolean fromBase = rule.isBase();
+						
+						int tmp = 0;
+						for (String packet : packetStream) {
+							tmp++;
+							try {
+								//{"content":"{\"host\":\"127.0.0.1\",\"user\":\"-\",\"path\":\"/login.php\",\"code\":\"201\",\"size\":\"2691\"}","type":"high.apachepost","time":1463365885}
+								final JSONParser parser = new JSONParser();
+								JSONObject obj = (JSONObject) parser.parse(packet);
+								
+								type = new Tuple (obj.get("type").toString(), 
+										obj.get("content").toString());
+								result = rule.check(type);
+							} catch (ParseException e) {
+								e.printStackTrace();
 							}
-						});
+
+							if (type == null) {
+								logger.error("CANNOT ARRIVE HERE! (type == null)");
+								continue;
+							}
+
+							switch (result) {
+							case UPDATE:
+								rule.update(type);
+								break;
+							case FAIL:
+								break;
+							case TIMEOVER:
+								logger.error("TIMEOVER RULE");
+								return new Tuple2<resultCode, Rule> (resultCode.TIMEOVER, null);
+							case COMPLETE:
+								if (fromBase && tmp == packetStream.size()) {
+									rule.update(type);
+									writeDB(rule);
+									logger.error("COMPLETE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size());
+								}
+								
+								if (!fromBase) {
+									rule.update(type);
+									writeDB(rule);
+									logger.error("COMPLETE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size());
+								}
+								return new Tuple2<resultCode, Rule> (resultCode.COMPLETE, null);
+							}
+						}
+
+						switch (result) {
+						case UPDATE:
+							logger.error("UPDATE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size());
+							return new Tuple2<resultCode, Rule> (resultCode.UPDATE, rule);
+						case FAIL:
+//							logger.error("FAIL RULE");
+							if (!fromBase) {
+								return new Tuple2<resultCode, Rule> (resultCode.FAIL, rule);
+							}
+							break;
+						case TIMEOVER:
+							logger.error("CANNOT ARRIVE HERE! TIMEOVER");
+							break;
+						case COMPLETE:
+							logger.error("CANNOT ARRIVE HERE! COMPLETE");
+							break;
+						}
+
+						return new Tuple2<resultCode, Rule> (resultCode.FAIL, null);
 					}
 				});
 
@@ -250,40 +322,20 @@ public class App {
 				new VoidFunction<JavaPairRDD<resultCode, Rule>> (){
 					public void call(JavaPairRDD<resultCode, Rule> t) throws Exception {
 						// TODO Auto-generated method stub
-						t.foreach( new VoidFunction<Tuple2<resultCode, Rule>> () {
-							public void call(Tuple2<resultCode, Rule> t) throws Exception {
-								// TODO Auto-generated method stub
-								if (t._1 == resultCode.COMPLETE) {
-									writeDB(t._2);
-									t._2.removeFrom(remainRules);
-								}
-								else if (t._1 == resultCode.UPDATE) {
-									boolean temp = false;
-									for (Rule r : remainRules) {
-										if (r.getId() == t._2.getId()) {
-											r.union(t._2);
-											temp = true;
-											if (r.checkComplete()) {
-												writeDB(t._2);
-												t._2.removeFrom(remainRules);
-											}
-										}
-										break;
-									}
-									if ((!temp) && t._2.getCheckedTypes().size() == 1) {
-										remainRules.add(t._2);
-									}
-								}
-								else if (t._1 == resultCode.TIMEOVER) {
-									t._2.removeFrom(remainRules);
-								}
+
+						List<Tuple2<resultCode,Rule>> a = t.collect();
+						int cnt = 0;
+						for (Tuple2<resultCode, Rule> tuple : a) {
+							if (cnt++ == 0) {
+								remainRules = new ArrayList<Rule>();
 							}
-						});
+							if (tuple._2 != null) {
+								remainRules.add(tuple._2);
+							}
+						}
 					}
 				});
 
-//		typeRulePairDStream.print();
-//		resultRuleDstream.print();
 		jssc.start();
 		jssc.awaitTermination();
 	}

@@ -93,6 +93,19 @@ public class LogaxController
 			writer.write("    type ${tag}\n");
 			writer.write("  </record>\n</filter>\n\n");
 
+			for (int i = 0; i < jarr.size(); i++)
+			{
+				JSONObject job = (JSONObject)jarr.get(i);
+				try {
+					request.parse(job);
+				}
+				catch (JsonTypeException e)
+				{
+					return resultMessage(0, "Wrong Input type");
+				}
+				request.printElastic(writer, pos_file);
+			}
+
 			/* Edit fluentd send to kafka */
 			writer.write("<match high.**>\n");
 	      	writer.write("  @type               kafka\n");

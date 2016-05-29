@@ -1,1 +1,1 @@
-{"Rule":[{"duration":10,"ordered":"false","types":[{"number":1,"name":"apacheget"},{"number":1,"name":"apachepost"}],"name":"ApacheGetPostRule","attributes":[]},{"duration":0,"ordered":"true","types":[{"number":1,"name":"apachepost"}],"name":"RuleGet","attributes":[]}]}
+{"Rule":[{"duration":5000,"ordered":"true","types":[{"number":2,"name":"apacheget"},{"number":2,"name":"apachepost"}],"name":"FirstRule","attributes":[]}]}

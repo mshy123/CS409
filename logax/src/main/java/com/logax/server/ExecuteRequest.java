@@ -28,12 +28,34 @@ public class ExecuteRequest
 		writer.write("  @type tail\n");
 		writer.write("  format " + typeregex + "\n");
 		writer.write("  path " + path + "\n");
-		writer.write("  pos_file " + globalposfile + typename + "\n");
+		writer.write("  pos_file " + globalposfile + typename + "_kafka\n");
 		writer.write("  tag " + priority + "." + typename + "\n");
 		writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
+		writer.write("  keep_time_key true\n");
+		writer.write("</source>" + "\n\n");
+		writer.write("<source>\n");
+		writer.write("  @type tail\n");
+		writer.write("  format " + typeregex + "\n");
+		writer.write("  path " + path + "\n");
+		writer.write("  pos_file " + globalposfile + typename + "_elastic\n");
+		writer.write("  tag " + "elastic." + priority + "." + typename + "\n");
+		writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
+		writer.write("  keep_time_key true\n");
 		writer.write("</source>" + "\n\n");
 	}
 
+	public void printElastic(FileWriter writer, String globalposfile) throws IOException
+	{
+		writer.write("<match elastic.**>\n");
+		writer.write("  @type elasticsearch\n");
+		writer.write("  host localhost\n");
+		writer.write("  port 9200\n");
+		writer.write("  index_name " + typename + "\n");
+		writer.write("  type_name " + typename + "\n");
+		writer.write("  flush_interval 60s\n");
+		writer.write("  logstash_format true\n");
+		writer.write("</match>" + "\n\n");
+	}
 	public int addDBType()
 	{
 		return DBClient.addType(typename, typeregex, priority, path);
