@@ -8,7 +8,7 @@ First_app/target/
 logax/target/
 
 ### fluent file
-fluent/pos/
+fluent/pos/*
 
 ### all the jar file
 .jar
