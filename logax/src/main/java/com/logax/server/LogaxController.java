@@ -75,11 +75,11 @@ public class LogaxController
 			{
 				JSONObject job = (JSONObject)jarr.get(i);
 				try {
-					request.parse(job);
+					request.parse2(job);
 				}
 				catch (JsonTypeException e)
 				{
-					return resultMessage(0, "Wrong Input type");
+					return resultMessage(0, "Wrong Input type3");
 				}
 				request.print(writer, pos_file);
 			}
@@ -97,11 +97,11 @@ public class LogaxController
 			{
 				JSONObject job = (JSONObject)jarr.get(i);
 				try {
-					request.parse(job);
+					request.parse2(job);
 				}
 				catch (JsonTypeException e)
 				{
-					return resultMessage(0, "Wrong Input type");
+					return resultMessage(0, "Wrong Input type4");
 				}
 				request.printElastic(writer, pos_file);
 			}
@@ -142,7 +142,7 @@ public class LogaxController
 		}
 		catch(ParseException e)
 		{
-			return resultMessage(0, "Wrong Input type");
+			return resultMessage(0, "Wrong Input type1");
 		}
 
 		ExecuteRequest request = new ExecuteRequest();
@@ -153,7 +153,7 @@ public class LogaxController
 		}
 		catch(JsonTypeException e)
 		{
-			return resultMessage(0, "Wrong Input type");
+			return resultMessage(0, "Wrong Input type2");
 		}
 		/* add DB */
 		if (request.addDBType() == -1)
@@ -216,12 +216,23 @@ public class LogaxController
 			return "{\"error\":\"bad request\"}";
 		}
 
-		if (request.editDBType() != -1)
+		if (request.editDBType() != 0)
 		{
-			return resultMessage(1, "Cannot make type by edit. Use Add command");
+			return resultMessage(0, "Cannot make type by edit. Use Add command");
 		}
 
 		return printFluentd();
+	}
+	
+	@RequestMapping(value = "/gettypeframe/{requestString}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String returnTypeFrame(@PathVariable(value="requestString") String requestString)
+	{	
+		JSONObject obj = new JSONObject();
+
+		obj.put("success", true);
+		obj.put("regexnum", DBClient.getTypeFrame(requestString));
+		return obj.toJSONString();
 	}
 
 	@RequestMapping(value = "/gettype/{requestString}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")

@@ -47,7 +47,7 @@ Ext.define('logax.view.rule.AddRule', {
 				},
 				{
 					xtype: 'numberfield',
-					fieldLabel: 'Duration',
+					fieldLabel: 'Duration (ms)',
 					id: 'duration',
 					minValue: 0,
 					value: 0,

@@ -10,6 +10,7 @@ import java.io.*;
 public class ExecuteRequest
 {
 	private String typename;
+	private String regexnum;
 	private String typeregex;
 	private String priority;
 	private String path;
@@ -24,24 +25,36 @@ public class ExecuteRequest
 
 	public void print(FileWriter writer, String globalposfile) throws IOException
 	{
-		writer.write("<source>\n");
-		writer.write("  @type tail\n");
-		writer.write("  format " + typeregex + "\n");
-		writer.write("  path " + path + "\n");
-		writer.write("  pos_file " + globalposfile + typename + "_kafka\n");
-		writer.write("  tag " + priority + "." + typename + "\n");
-		writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
-		writer.write("  keep_time_key true\n");
-		writer.write("</source>" + "\n\n");
-		writer.write("<source>\n");
-		writer.write("  @type tail\n");
-		writer.write("  format " + typeregex + "\n");
-		writer.write("  path " + path + "\n");
-		writer.write("  pos_file " + globalposfile + typename + "_elastic\n");
-		writer.write("  tag " + "elastic." + priority + "." + typename + "\n");
-		writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
-		writer.write("  keep_time_key true\n");
-		writer.write("</source>" + "\n\n");
+		JSONParser parser = new JSONParser();
+		try
+		{
+			JSONArray typeregexarray = (JSONArray)parser.parse(typeregex);
+			for (Object ob : typeregexarray) {
+				JSONObject job = (JSONObject) ob;
+				String reg = (String)job.get("typeregex");
+				writer.write("<source>\n");
+				writer.write("  @type tail\n");
+				writer.write("  format " + reg + "\n");
+				writer.write("  path " + path + "\n");
+				writer.write("  pos_file " + globalposfile + typename + "_kafka\n");
+				writer.write("  tag " + priority + "." + typename + "\n");
+				writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
+				writer.write("  keep_time_key true\n");
+				writer.write("</source>" + "\n\n");
+				writer.write("<source>\n");
+				writer.write("  @type tail\n");
+				writer.write("  format " + reg + "\n");
+				writer.write("  path " + path + "\n");
+				writer.write("  pos_file " + globalposfile + typename + "_elastic\n");
+				writer.write("  tag " + "elastic." + priority + "." + typename + "\n");
+				writer.write("  time_format %d/%b/%Y:%H:%M:%S %z\n");
+				writer.write("  keep_time_key true\n");
+				writer.write("</source>" + "\n\n");
+			}
+		}
+		catch(ParseException e)
+		{
+		}
 	}
 
 	public void printElastic(FileWriter writer, String globalposfile) throws IOException
@@ -58,12 +71,12 @@ public class ExecuteRequest
 	}
 	public int addDBType()
 	{
-		return DBClient.addType(typename, typeregex, priority, path);
+		return DBClient.addType(typename, regexnum, typeregex, priority, path);
 	}
 	
 	public int editDBType()
 	{
-		return DBClient.editType(typename, typeregex, priority, path);
+		return DBClient.editType(typename, regexnum, typeregex, priority, path);
 	}
 
 	public void removeDBType()
@@ -71,12 +84,23 @@ public class ExecuteRequest
 		DBClient.removeType(typename);
 	}
 
+	public void parse2(JSONObject jsonObject) throws JsonTypeException
+	{
+		SafeJson json = new SafeJson(jsonObject);
+
+		this.typename = json.getString("typename");
+		this.regexnum = json.getString("regexnum");
+		this.typeregex = json.getString("typeregex");
+		this.priority = json.getString("priority");
+		this.path = json.getString("path");
+	}
 	public void parse(JSONObject jsonObject) throws JsonTypeException
 	{
 		SafeJson json = new SafeJson(jsonObject);
 
 		this.typename = json.getString("typename");
-		this.typeregex = json.getString("typeregex");
+		this.regexnum = json.getString("regexnum");
+		this.typeregex = ((JSONArray)jsonObject.get("typeregex")).toString();
 		this.priority = json.getString("priority");
 		this.path = json.getString("path");
 	}

@@ -106,7 +106,7 @@ public class App {
 
 		try {
 			final JSONParser parser = new JSONParser();
-			Object obj = parser.parse(new FileReader("Rule.json"));
+			Object obj = parser.parse(new FileReader("/Users/hyunhoha/LocalCEP/Rule.json"));
 
 			JSONObject jsonObject = (JSONObject) obj;
 

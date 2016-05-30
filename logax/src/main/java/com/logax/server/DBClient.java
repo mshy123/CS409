@@ -63,6 +63,7 @@ class ArrayBlock implements Block<Document>
 	{
 		JSONObject type = new JSONObject();
 		type.put("typename", document.getString("typename"));
+		type.put("regexnum", document.getString("regexnum"));
 		type.put("typeregex", document.getString("typeregex"));
 		type.put("priority", document.getString("priority"));
 		type.put("path", document.getString("path"));
@@ -140,11 +141,12 @@ public class DBClient
 		}
 	}
 
-	public static int addType(String typename, String typeregex, String priority, String path)
+	public static int addType(String typename, String regexnum, String typeregex, String priority, String path)
 	{
 		init();
 		Document type = new Document()
 			.append("typename", typename)
+			.append("regexnum", regexnum)
 			.append("typeregex", typeregex)
 			.append("priority", priority)
 			.append("path", path);
@@ -157,12 +159,13 @@ public class DBClient
 		return 0;
 	}
 	
-	public static int editType(String typename, String typeregex, String priority, String path)
+	public static int editType(String typename, String regexnum, String typeregex, String priority, String path)
 	{
 		int exist = 0;
 		init();
 		Document type = new Document()
 			.append("typename", typename)
+			.append("regexnum", regexnum)
 			.append("typeregex", typeregex)
 			.append("priority", priority)
 			.append("path", path);
@@ -194,15 +197,43 @@ public class DBClient
 		db.getCollection("type").deleteMany(new Document());
 	}
 
-	public static JSONObject getType(String typename)
+	public static int getTypeFrame(String typename)
 	{
 		init();
 		JSONObject type = new JSONObject();
 		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
 		for (Document document : iterable)
 		{
+			return Integer.parseInt(document.getString("regexnum"));
+		}
+
+		return 0;
+	}
+	public static JSONObject getType(String typename)
+	{
+		JSONParser parser = new JSONParser();
+		JSONArray typeregexarray = null;
+
+		init();
+		JSONObject type = new JSONObject();
+		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
+		for (Document document : iterable)
+		{
 			type.put("typename", document.getString("typename"));
-			type.put("typeregex", document.getString("typeregex"));
+			type.put("regexnum", document.getString("regexnum"));
+			try
+			{
+				typeregexarray = (JSONArray)parser.parse(document.getString("typeregex"));
+				int i = 0;
+				for (Object obj : typeregexarray) {
+					JSONObject job = (JSONObject) obj;
+					type.put("typeregex" + i, (String)job.get("typeregex"));
+					i++;
+				}
+			}
+			catch(ParseException e)
+			{
+			}
 			type.put("priority", document.getString("priority"));
 			type.put("path", document.getString("path"));
 		}

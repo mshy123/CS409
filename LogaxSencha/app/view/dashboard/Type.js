@@ -15,7 +15,6 @@ Ext.define('logax.view.dashboard.Type', {
 	frame: true,
 	title: 'Type Controller',
 	bodyPadding: 5,
-	height: 500,
 	layout: 'column',
 	items: [
 		{
@@ -40,10 +39,32 @@ Ext.define('logax.view.dashboard.Type', {
 			listeners: {
 				itemclick : function(view, rec, item, index, eventObj) {
 					if (rec.get('leaf')) {
-						view.up('form').getForm().load({
-							url: 'api/gettype/' + rec.get('text'),
-							params: rec.get('text'),
-							method: 'GET'
+						view.up('form').down('fieldset').removeAll();
+						Ext.Ajax.request({
+							url: 'api/gettypeframe/' + rec.get('text'),
+							method: 'GET',
+							
+							success:function(result, request) {
+								var i;
+								view.up('form').down('fieldset').removeAll();
+								var resultjson = Ext.JSON.decode(result.responseText);
+								for (i = 0; i < resultjson.regexnum; i++) {
+									var regextext = Ext.create('Ext.form.field.Text',
+									{
+										fieldLabel: Ext.String.format('Regex ' + i),
+										id: Ext.String.format('typeregex' + i),
+										allowBlank: false
+									});
+									view.up('form').down('fieldset').add(regextext);
+								}
+								view.up('form').getForm().load({
+									url: 'api/gettype/' + rec.get('text'),
+									method: 'GET'
+								});
+							},
+							failure:function(result, request) {
+								Ext.Msg.alert("Failed");
+							}
 						});
 					}
 				}
@@ -51,7 +72,7 @@ Ext.define('logax.view.dashboard.Type', {
 		},
 		{
 			margin: '0 0 0 10',
-			xtype: 'fieldset',
+			xtype: 'fieldcontainer',
 			title:'Type details',
 			layout: 'anchor',
 			defaultType: 'textfield',
@@ -62,9 +83,46 @@ Ext.define('logax.view.dashboard.Type', {
 					allowBlank: false
 				},
 				{
-					fieldLabel: 'Type Regex',
-					id: 'typeregex',
-					allowBlank: false
+					xtype: 'panel',
+					layout: 'hbox',
+					items: [
+						{
+							xtype: 'textfield',
+							fieldLabel: 'Number of regex',
+							id: 'regexnum',
+							allowBlank: true
+						},
+						{
+							xtype: 'button',
+							text: 'make',
+							handler: function(){
+								var num = Ext.getCmp('regexnum').getValue();
+								var i;
+								var me = this;
+								me.up('form').down('fieldset').removeAll();
+								for (i = 0; i < num; i++) {
+									var regextext = Ext.create('Ext.form.field.Text',
+									{
+										fieldLabel: Ext.String.format('Regex ' + i),
+										id: Ext.String.format('typeregex' + i),
+										allowBlank: false
+									});
+									me.up('form').down('fieldset').add(regextext);
+								}
+							}
+						}
+					]
+				},
+				{
+					xtype: 'fieldset',
+					title: 'Regex List',
+					collapsible: true,
+					layout: 'vbox',
+					defaults: {
+						flex: 1
+					},
+					items: [{
+					}]
 				},
 				{
 					fieldLabel: 'Path',
@@ -96,10 +154,21 @@ Ext.define('logax.view.dashboard.Type', {
 					disabled: true,
 					handler: function() {
 						var me = this;
+						var regexlist = [];
+						var num = Ext.getCmp('regexnum').getValue();
+						var i;
+						for (i = 0; i < num; i++) {
+							var jsonregex =
+							{
+								"typeregex":Ext.getCmp(Ext.String.format('typeregex' + i)).getValue()
+							};
+							regexlist.push(jsonregex);
+						}
 						var jsonRequest = 
 						{
 							"typename":Ext.getCmp('typename').getValue(),
-							"typeregex":Ext.getCmp('typeregex').getValue(),
+							"regexnum":num,
+							"typeregex":regexlist,
 							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
 							"path":Ext.getCmp('path').getValue()
 						};
@@ -131,11 +200,22 @@ Ext.define('logax.view.dashboard.Type', {
 					formBind: true,
 					disabled: true,
 					handler: function() {
+						var regexlist = [];
+						var num = Ext.getCmp('regexnum').getValue();
+						var i;
 						var me = this;
+						for (i = 0; i < num; i++) {
+							var jsonregex =
+							{
+								"typeregex":Ext.getCmp(Ext.String.format('typeregex' + i)).getValue()
+							};
+							regexlist.push(jsonregex);
+						}
 						var jsonRequest = 
 						{
 							"typename":Ext.getCmp('typename').getValue(),
-							"typeregex":Ext.getCmp('typeregex').getValue(),
+							"regexnum":num,
+							"typeregex":regexlist,
 							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
 							"path":Ext.getCmp('path').getValue()
 						};
@@ -165,17 +245,9 @@ Ext.define('logax.view.dashboard.Type', {
 					text: 'Delete',
 					handler: function() {
 						var me = this;
-						var jsonRequest = 
-						{
-							"typename":Ext.getCmp('typename').getValue(),
-							"typeregex":Ext.getCmp('typeregex').getValue(),
-							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
-							"path":Ext.getCmp('path').getValue()
-						};
 						Ext.Ajax.request({
 							url: Ext.String.format("api/deletetype/" + Ext.getCmp('typename').getValue()),
 							method:"GET",
-							jsonData: jsonRequest,
 
 							success:function(result, request) {
 								var job = Ext.JSON.decode(result.responseText);
@@ -202,6 +274,7 @@ Ext.define('logax.view.dashboard.Type', {
 			handler: function() {
 				var me = this;
 				me.up('form').getForm().reset();
+				me.up('form').down('fieldset').removeAll();
 				me.up('form').down('treepanel').getStore().load();
 			}
 		},

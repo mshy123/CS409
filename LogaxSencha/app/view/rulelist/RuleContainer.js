@@ -97,7 +97,6 @@ Ext.define('logax.view.rulelist.RuleContainer', {
 								}
 								view.up('form').getForm().load({
 									url: 'api/getrule/' + rec.get('text'),
-									params: rec.get('text'),
 									method: 'GET'
 								});
 							},
@@ -143,7 +142,7 @@ Ext.define('logax.view.rulelist.RuleContainer', {
 				},
 				{
 					xtype: 'numberfield',
-					fieldLabel: 'Duration',
+					fieldLabel: 'Duration (ms)',
 					id: 'controllerduration',
 					minValue: 0,
 					value: 0,
