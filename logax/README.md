@@ -22,5 +22,5 @@ You can connect logax server `http://127.0.0.1:8080/logax`
 ##Design
 All the request from the sencha will go to `LogaxController` by `localhost:8080/api/{command}`  
 All the result will be update the mongoDB by `DBClient`  
-We have total 4 collection in `test`, which are `type`, `rule`, 'ruletype`, `rules`.  
+We have total 4 collection in `test`, which are `type`, `rule`, `ruletype`, `rules`.  
 Specific detail is describe in each file's comment.
