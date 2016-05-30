@@ -52,9 +52,9 @@ kibana
 zkserver start
 kafka-server-start /usr/local/etc/kafka/server.properties
 ```
-You have to add hightopic and lowtopic in the zookeeper using `kafka-topics` command with replica = 1, partitions = 1
-After setting running Logax Server.
-Please refer to `logax/README.md`
+You have to add hightopic and lowtopic in the zookeeper using `kafka-topics` command with `replica = 1`, `partitions = 1`  
+After setting running Logax Server.  
+Please refer to `logax/README.md`  
 
 ##Logax Server
 `localhost:8080/logax`
