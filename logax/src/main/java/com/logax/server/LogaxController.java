@@ -67,7 +67,7 @@ public class LogaxController
 		
 		try	{	
 			/* Stop the core process */
-			CoreController.stopCore();
+			//CoreController.stopCore();
 			/* Edit fluentd File : type */
 			writer = new FileWriter(fluentpath);
 			JSONArray jarr = DBClient.getTypeList();
@@ -119,7 +119,7 @@ public class LogaxController
 		    writer.write("  output_include_time true\n</match>\n\n");
 			writer.flush();
 			writer.close();
-			CoreController.startCore();
+			//CoreController.startCore();
 		}
 		catch(IOException e)
 		{

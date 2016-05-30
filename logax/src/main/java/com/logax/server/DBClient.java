@@ -33,6 +33,14 @@ class RuleArrayBlock implements Block<Document>
 		try
 		{
 			rule = (JSONObject)parser.parse(document.getString("body"));
+			String order = (String)rule.get("ordered");
+			rule.remove("ordered");
+			if(order.equals("true")) {
+				rule.put("ordered", true);
+			}
+			else {
+				rule.put("ordered", false);
+			}
 		}
 		catch(ParseException e)
 		{
@@ -335,6 +343,7 @@ public class DBClient
 				result.put("controllername", (String)rule.get("name"));
 				result.put("controllerduration", (int)(long) (Long)rule.get("duration"));
 				result.put("controllerordered", (String)rule.get("ordered"));
+
 				int i = 0;
 				for (Object ob : typearray) {
 					JSONObject job = (JSONObject)ob;
