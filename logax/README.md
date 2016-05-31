@@ -24,3 +24,23 @@ All the request from the sencha will go to `LogaxController` by `localhost:8080/
 All the result will be update the mongoDB by `DBClient`  
 We have total 4 collection in `test`, which are `type`, `rule`, `ruletype`, `rules`.  
 Specific detail is describe in each file's comment.
+
+##How to use it
+###Add type
+Go to `http://localhost:8080/logax/#dashboard`  
+`Type name : String` You can't add same type name.  
+`Type regex : String` is a regular expression that include in type name. You can add number of regular expression.  
+`Type path : String` is a path that fluentd will be read. It must be absolute path.  
+`Type priority` is a priority of the type.  
+###Add rule
+Go to `http://localhost:8080/logax/#rule`  
+`Rule name : String`  
+`Type name` and `Number : Integer` All the type has same priority. We didn't check it.  
+`Duration : Integer` Time interval that check this rule. 
+`Ordered` When you click the true ordered, CEP engine check each type by ordered.  
+`Attribute : String` Grouping the type by this attribute. We didn't check that this attribute is in the regular expression.  
+###Delete rule
+Go to `http://localhost:8080/logax/#rulelist`  
+Click the specific rule in the rule list.  
+When you click the `delete` button, you can delete it.  
+If there isn't a rule in the list, click the `refresh` button.
