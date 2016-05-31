@@ -48,64 +48,88 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
-import com.mycompany.app.Rule.RESULTCODE;
 
 import scala.Tuple2;
 
 /**
- * Consumes messages from one or more topics in Kafka and does wordcount.
+ * CEP engine that consumes messages from one or more topics in Kafka.
+ *
+ * The engine's algorithm to detect user defined rule is following.
+ * There are two kinds of rules, one is baseRules and the other is remainRules.
+ * baseRules doesn't change except beginning of the program to read Rule.json.
+ * remainRUles comes from baseRules.
+ * baseRules that is compared to packet can produce new rule instance that belogns to remainRules.
+ * All packet messages are paired with each baseRules, remainRules.
+ * 
+ * For example, let there is rule that is counted as complete when getting 5 "apachepost" types.
+ * We can indicate like this.
+ * 
+ * Rule1 ( 0 / 5 )
+ * 
+ * 5 means number of "apachepost" types that should be filtered.
+ * 0 means current state of Rule instance.
+ * 
+ * Then let say program receive 2 series of "apachepost" type packets.
+ * 
+ * before messages received.
+ * baseRules = [ Rule1 ( 0 / 5 ) ]
+ * remainRules = [ ]
+ * 
+ * messages pairing.
+ * ( [ "apachepost", "apachepost" ], Rule1 ( 0 / 5 ) ) 
+ * 
+ * after messages received.
+ * baseRules = [ Rule1 ( 0 / 5 ) ]
+ * remainRUles = [ Rule1 ( 1 / 5 ), Rule1 ( 2 / 5 ) ]
+ * 
+ * 
+ * Then let say program receive 4 series of "apachepost" type packets.
+ * 
+ * before messages received.
+ * baseRules = [ Rule1 ( 0 / 5 ) ]
+ * remainRUles = [ Rule1 ( 1 / 5 ), Rule1 ( 2 / 5 ) ]
+ * 
+ * messages pairing.
+ * ( [ "apachepost", "apachepost", "apachepost", "apachepost" ], Rule1 ( 0 / 5 ) )
+ * ( [ "apachepost", "apachepost", "apachepost", "apachepost" ], Rule1 ( 1 / 5 ) )
+ * ( [ "apachepost", "apachepost", "apachepost", "apachepost" ], Rule1 ( 2 / 5 ) ) 
+ * 
+ * after messages received.
+ * baseRules = [ Rule1 ( 0 / 5 ) ]
+ * remainRUles = [ Rule1 ( 1 / 5 ), Rule1 ( 2 / 5 ), Rule1 ( 3 / 5 ), Rule1 ( 4 / 5 ) ]
+ * completeRules = [ Rule1 ( 5 / 5 ), Rule1 ( 5 / 5 ) ]
+ *
+ * According to our policy, total 6 packets return 2 complete Rule1.
+ * ("apachepost", "apachepost", "apachepost", "apachepost", "apachepost"), "apachepost"
+ * "apachepost", ("apachepost", "apachepost", "apachepost", "apachepost", "apachepost")
  *
  * Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>
  *   <zkQuorum> is a list of one or more zookeeper servers that make quorum
  *   <group> is the name of kafka consumer group
  *   <topics> is a list of one or more kafka topics to consume from
  *   <numThreads> is the number of threads the kafka consumer should use
- *
- * To run this example:
- *   `$ bin/run-example org.apache.spark.examples.streaming.JavaKafkaWordCount zoo01,zoo02, \
- *    zoo03 my-consumer-group topic1,topic2 1`
  */
 
 public class App {
+	/** 
+	 * The "Rule"s array read from Rule.json file.
+	 * It only added beginning of program,
+	 * and doesn't change anymore in program's life cycle.
+	 */
 	private static ArrayList<Rule> baseRules;
+	
+	/** The "Rule"s array indicating that current state of the rules (how many types are proceeded). */
 	private static ArrayList<Rule> remainRules;
 
 	final static Logger logger = Logger.getLogger(App.class);
 
-	private App() {
-	}
-
-	private static void writeDB (Rule r) {
-		Mongo mongo = new Mongo("localhost", 27017);
-		DB db = mongo.getDB("test");
-		DBCollection collection = db.getCollection("Rules");
-		BasicDBObject document = new BasicDBObject();
-		document.put("name", r.getName());
-
-		ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
-		for (Tuple t : r.getCheckedTypes()) {
-			BasicDBObject tmp = new BasicDBObject();
-			tmp.put("name", t.typeName);
-			tmp.put("content", t.content);
-			types.add(tmp);
-		}
-		document.put("types", types);
-
-		collection.insert(document);
-		mongo.close();
-	}
-
-	public static void main(String[] args) {
-		if (args.length < 4) {
-			System.err.println("Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>");
-			System.exit(1);
-		}
-
-		baseRules = new ArrayList<Rule>();
-		remainRules = new ArrayList<Rule>();
-
+	/**
+	 * Read Rule.json and save parse into Rule instances.
+	 * All result are saved in baseRules.
+	 */
+	private static void readRule () {
 		try {
-			final JSONParser parser = new JSONParser();
+			JSONParser parser = new JSONParser();
 			Object obj = parser.parse(new FileReader("Rule.json"));
 
 			JSONObject jsonObject = (JSONObject) obj;
@@ -116,13 +140,13 @@ public class App {
 				JSONObject jsonRule = (JSONObject) rule;
 
 				JSONArray jsonTypes = (JSONArray) jsonRule.get("types");
-				ArrayList<Tuple> types = new ArrayList<Tuple>();
+				ArrayList<Type> types = new ArrayList<Type>();
 
 				for (Object type : jsonTypes) {
 					for (int i=0;
 							i<Math.toIntExact((Long) ((JSONObject) type).get("number"));
 							i++) {
-						types.add(new Tuple ((String) ((JSONObject) type).get("name")));
+						types.add(new Type ((String) ((JSONObject) type).get("name")));
 					}
 				}
 				JSONArray jsonAttributes = (JSONArray) jsonRule.get("attributes");
@@ -146,11 +170,47 @@ public class App {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/** Write complete rule to mongoDB */
+	private static void writeDB (Rule r) {
+		Mongo mongo = new Mongo("localhost", 27017);
+		DB db = mongo.getDB("test");
+		DBCollection collection = db.getCollection("Rules");
+		BasicDBObject document = new BasicDBObject();
+		document.put("name", r.getName());
 
-		logger.error("Initial baseRules size: " + baseRules.size());
+		ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
+		for (Type t : r.getCheckedTypes()) {
+			BasicDBObject tmp = new BasicDBObject();
+			tmp.put("name", t.typeName);
+			tmp.put("content", t.content);
+			types.add(tmp);
+		}
+		document.put("types", types);
 
-		SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount");
-		// Create the context with 2 seconds batch size
+		collection.insert(document);
+		mongo.close();
+	}
+
+	public static void main(String[] args) {
+		if (args.length < 4) {
+			/* Check invalid options */
+			System.err.println("Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>");
+			System.exit(1);
+		}
+
+		/* Rules initialization */
+		baseRules = new ArrayList<Rule>();
+		remainRules = new ArrayList<Rule>();
+		readRule();
+//		logger.error("Initial baseRules size: " + baseRules.size());
+
+		SparkConf sparkConf = new SparkConf().setAppName("Logax");
+		/* 
+		 * Create the context with 2 seconds batch size
+		 * Batch size can be tuned for performance. 
+		 */
 		final JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
 
 		int numThreads = Integer.parseInt(args[3]);
@@ -163,21 +223,25 @@ public class App {
 		JavaPairReceiverInputDStream<String, String> messages =
 				KafkaUtils.createStream(jssc, args[0], args[1], topicMap);
 
+		/* Lines is series of input packets RDD. */
 		JavaDStream<String> lines = messages.map(new Function<Tuple2<String, String>, String>() {
 			public String call(Tuple2<String, String> tuple2) {
 				return tuple2._2();
 			}
 		});
 
+		/* 
+		 * Each RDD in typeRUlePairDStream is composed of pairs.
+		 * ( [packet, packet, ...], Rule )
+		 * Total number of pairs is ( baseRules + remainRules )
+		 * So the degree of distribution is up to number of rules.
+		 */
 		JavaPairDStream<ArrayList<String>, Rule> typeRulePairDStream = lines.transformToPair(
 				new Function<JavaRDD<String>, JavaPairRDD <ArrayList<String>, Rule>>() {
 					public JavaPairRDD<ArrayList<String>, Rule> call (JavaRDD<String> t) {
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
-						logger.error("Size of baseRDD: " + baseRulesRDD.count());
-						logger.error("Size of remainRulesRDD: " + remainRulesRDD.count());
-						logger.error("Size of lines: " + t.count());
 
 						ArrayList<ArrayList<String>> a = new ArrayList<ArrayList<String>>();
 						ArrayList<String> arrayListT = new ArrayList<String>();
@@ -189,37 +253,39 @@ public class App {
 					}
 				});
 
-
+		/* 
+		 * Pair RDD is checked here.
+		 * When Rule is baseRule, it can produce some other rule instances.
+		 * When RUle is remainRule, it is only checked within itself.
+		 */
 		JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.flatMap (
 				new FlatMapFunction<Tuple2<ArrayList<String>, Rule>, Rule> () {
 
 					public Iterable<Rule> call(Tuple2<ArrayList<String>, Rule> t) throws Exception {
 						// TODO Auto-generated method stub
 
-						ArrayList<Rule> result = new ArrayList<Rule>();
-						ArrayList<String> packetStream = t._1;
-						Rule rule = t._2.ruleClone();
-						Tuple type = null;
+						ArrayList<Rule> result = new ArrayList<Rule>(); /* return value */
+						ArrayList<String> packetStream = t._1; /* input packet stream */
+						Rule rule = t._2.ruleClone(); /* Rule for checking */
+						Type type = null;
 						Boolean fromBase = rule.isBase();
 
 						if (fromBase) {
+							/* When rule is baseRule */
 							for (String packet : packetStream) {
 								try {
 									final JSONParser parser = new JSONParser();
 									JSONObject obj = (JSONObject) parser.parse(packet);
-									type = new Tuple (obj.get("type").toString(), 
-											obj.get("content").toString());
+									type = new Type (obj.get("type").toString(), 
+											obj.get("content").toString()); /* a parsed packet */
 								} catch (ParseException e) {
 									e.printStackTrace();
 								}
 
-								if (type == null) {
-									logger.error("CANNOT ARRIVE HERE! (type == null)");
-									continue;
-								}
-
+								
 								ArrayList<Rule> tempArray = new ArrayList<Rule>();
 								for (Rule r : result) {
+									/* Checking for newly created rules from baseRule (not remainRule now!) */
 									switch (r.check(type)) {
 									case UPDATE:
 										r.update(type);
@@ -229,13 +295,11 @@ public class App {
 										tempArray.add(r);
 										break;
 									case TIMEOVER:
-										//remove
-										logger.error("TIMEOVER RULE");
 										break;
 									case COMPLETE:
 										r.update(type);
 										writeDB(r);
-										logger.error("COMPLETE: " + r.getCheckedTypes().size() + " / " + r.getTypes().size());
+										logger.error("COMPLETE: " + rule.getName());
 										break;
 									}
 								}
@@ -243,39 +307,35 @@ public class App {
 								
 								Rule baseTemp = rule.ruleClone();
 								switch (baseTemp.check(type)) {
+								/* Checking for baseRule */
 								case UPDATE:
 									baseTemp.update(type);
-									result.add(baseTemp);
+									result.add(baseTemp); /* Creating new Rule instance */
 									break;
 								case FAIL:
 									break;
 								case TIMEOVER:
-									logger.error("TIMEOVER RULE");
 									break;
 								case COMPLETE:
 									baseTemp.update(type);
 									writeDB(baseTemp);
-									logger.error("COMPLETE: " + baseTemp.getCheckedTypes().size() + " / " + baseTemp.getTypes().size());
+									logger.error("COMPLETE: " + rule.getName());
 									break;
 								}
 							}
 							
-							return result;
+							return result; /* It will be added to remainRules */
 						}
 						else {
+							/* When rule is remainRule */
 							for (String packet : packetStream) {
 								try {
 									final JSONParser parser = new JSONParser();
 									JSONObject obj = (JSONObject) parser.parse(packet);
-									type = new Tuple (obj.get("type").toString(), 
+									type = new Type (obj.get("type").toString(), 
 											obj.get("content").toString());
 								} catch (ParseException e) {
 									e.printStackTrace();
-								}
-
-								if (type == null) {
-									logger.error("CANNOT ARRIVE HERE! (type == null)");
-									continue;
 								}
 
 								switch (rule.check(type)) {
@@ -285,23 +345,22 @@ public class App {
 								case FAIL:
 									continue;
 								case TIMEOVER:
-									logger.error("TIMEOVER RULE");
-									result.add(rule);
-									return result;
+									return result; /* result has no element */
 								case COMPLETE:
 									rule.update(type);
 									writeDB(rule);
-									logger.error("COMPLETE: " + rule.getCheckedTypes().size() + " / " + rule.getTypes().size());
+									logger.error("COMPLETE: " + rule.getName());
 									return result;
 								}
 							}
 							
 							result.add(rule);
-							return result;
+							return result; /* result has only one element */
 						}
 					}
 				});
 
+		/* Clear the remainRules and add all rules from checking process. */
 		resultRuleDstream.foreachRDD(
 				new VoidFunction<JavaRDD<Rule>> (){
 					public void call(JavaRDD<Rule> t) throws Exception {
@@ -311,7 +370,7 @@ public class App {
 						int cnt = 0;
 						for (Rule r : a) {
 							if (cnt == 0) {
-								remainRules = new ArrayList<Rule>();
+								remainRules = new ArrayList<Rule>(); /* clear rule. */
 								cnt++;
 							}
 							if (r != null) {
