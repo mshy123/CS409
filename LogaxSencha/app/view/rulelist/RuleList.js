@@ -1,3 +1,8 @@
+/*
+ * This view can be shown when user entered http://localhost:8080/logax/#rulelist
+ * Or click the Rule List on the left tab
+ */
+
 Ext.define('logax.view.rulelist.RuleList', {
 	extend: 'Ext.container.Container',
 	xtype: 'rulelist',

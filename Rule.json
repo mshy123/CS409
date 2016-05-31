@@ -1,1 +1,1 @@
-{"Rule":[{"duration":5000,"ordered":"true","types":[{"number":2,"name":"apacheget"},{"number":2,"name":"apachepost"}],"name":"FirstRule","attributes":[]}]}
+{"Rule":[{"duration":1000,"ordered":false,"types":[{"number":1,"name":"apacheaccess"}],"name":"ApacheAccess","attributes":[{"name":"client"}]}]}

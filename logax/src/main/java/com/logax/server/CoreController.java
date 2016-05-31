@@ -1,3 +1,10 @@
+/*
+ * CoreController
+ * version 0.1
+ * This class is used to control fluentd and spark.
+ * Not working
+ */
+
 package com.logax.server;
 
 import java.io.IOException;

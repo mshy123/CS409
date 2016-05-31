@@ -133,7 +133,6 @@ public class App {
 			Object obj = parser.parse(new FileReader("Rule.json"));
 
 			JSONObject jsonObject = (JSONObject) obj;
-
 			JSONArray Rules = (JSONArray) jsonObject.get("Rule");
 
 			for (Object rule : Rules) {

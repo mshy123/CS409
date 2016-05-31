@@ -1,3 +1,8 @@
+/*
+ * This view will be shown when user enter the http://localhost:8080/logax/#rule
+ * Or click the rule on the left tab
+ */
+
 Ext.define('logax.view.rule.Rule', {
 	extend: 'Ext.container.Container',
 	xtype: 'rule',
@@ -10,34 +15,9 @@ Ext.define('logax.view.rule.Rule', {
     layout: 'responsivecolumn',
 
 	items: [
-		//{
-		//	xtype: 'typelistform',
-		//	userCls: 'big-100 small-100 shadow'
-		//},
 		{		
 			xtype: 'addruleform',
             userCls: 'big-100 small-100 shadow'
 	    }
     ]
-/*
-	requires: [
-		'Ext.container.Container'
-	],
-
-	layout: {
-		type: 'vbox'
-	},
-
-	items: [
-		{
-			xtype: 'textfield',
-			name: 'typename',
-			id: 'typename',
-			fieldLabel: 'Wow',
-			allowBlank: false
-		},
-		{
-			xtype: 'dashboardform'
-		}
-	]*/
 });

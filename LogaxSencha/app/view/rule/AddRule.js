@@ -28,12 +28,14 @@ Ext.define('logax.view.rule.AddRule', {
 			layout: 'anchor',
 			defaultType: 'textfield',
 			items: [
+				/* Rule name text field */
 				{
 					xtype: 'textfield',
 					fieldLabel: 'Rule Name',
 					id: 'name',
 					allowBlank: false
 				},
+				/* Rule Type field */
 				{
 					xtype: 'fieldset',
 					title: 'Type List',
@@ -45,14 +47,16 @@ Ext.define('logax.view.rule.AddRule', {
 					items: [{
 					}]
 				},
+				/* Rule duration text field */
 				{
 					xtype: 'numberfield',
-					fieldLabel: 'Duration',
+					fieldLabel: 'Duration (ms)',
 					id: 'duration',
 					minValue: 0,
 					value: 0,
 					allowBlank: false
 				},
+				/* Rule ordered field */
 				{
 					xtype: 'radiogroup',
 					fieldLabel: 'Ordered',
@@ -78,6 +82,7 @@ Ext.define('logax.view.rule.AddRule', {
 		}
 	],
 	tools: [
+		/* Add new type container in the rule type field */
 		{
 			xtype: 'button',
 			text: 'Add Type',
@@ -86,6 +91,7 @@ Ext.define('logax.view.rule.AddRule', {
 				var num = logax.store.TypeNumber.typenum;
 				logax.store.TypeNumber.typenum = num + 1;
 				logax.store.TypeNumber.typelist.push(num);
+				/* Show list of the type. User can click to add it */
 				var typetext2 = Ext.create('Ext.form.field.ComboBox',
 				{
 					fieldLabel: 'Type List',
@@ -113,7 +119,7 @@ Ext.define('logax.view.rule.AddRule', {
 					forceSelection: true,
 					selectOnFocus: true,
 					queryMode: 'local'
-				});	
+				});
 				var typescreen = Ext.create('Ext.form.FieldSet',
 				{
 					xtype: 'fieldcontainer',
@@ -122,12 +128,7 @@ Ext.define('logax.view.rule.AddRule', {
 					items: [{
 					}]
 				});
-				var typetext = Ext.create('Ext.form.field.Text',
-				{
-					fieldLabel: 'Type Name',
-					id: Ext.String.format('typename' + num),
-					allowBlank: false
-				});
+				/* Number of the type */
 				var typenumtext = Ext.create('Ext.form.field.Number',
 				{
 					fieldLabel: 'Number',
@@ -136,6 +137,7 @@ Ext.define('logax.view.rule.AddRule', {
 					value: 1,
 					allowBlank: false
 				});
+				/* Delete this container */
 				var deletetypescreen = Ext.create('Ext.Button',
 				{
 					text: '-',
@@ -151,13 +153,13 @@ Ext.define('logax.view.rule.AddRule', {
 						me.up('form').down('fieldset').remove(typescreen, true);
 					}
 				});
-				//typescreen.add(typetext);
 				typescreen.add(typetext2);
 				typescreen.add(typenumtext);
 				typescreen.add(deletetypescreen);
 				me.up('form').down('fieldset').add(typescreen);
 			}
 		},
+		/* When user click this button, Add attribute field in the form */
 		{
 			xtype: 'button',
 			text: 'Add Attribute',
@@ -178,6 +180,7 @@ Ext.define('logax.view.rule.AddRule', {
 					id: Ext.String.format('attribute' + num),
 					allowBlank: false
 				});
+				/* Delete the attribute field */
 				var deleteatt = Ext.create('Ext.Button',
 				{
 					text: '-',
@@ -198,6 +201,7 @@ Ext.define('logax.view.rule.AddRule', {
 				me.up('form').down('fieldcontainer').add(attributescreen);
 			}
 		},
+		/* Reload all the type field. Type field can have lastest type list */
 		{
 			xtype: 'button',
 			text: 'Refresh Type Field',
@@ -208,6 +212,7 @@ Ext.define('logax.view.rule.AddRule', {
 				}
 			}
 		},
+		/* Add Rule to DB. Send request /api/addrule with jsonrequest */
 		{
 			xtype: 'button',
 			text: 'Commit',
@@ -221,6 +226,7 @@ Ext.define('logax.view.rule.AddRule', {
 				var typejson;
 				var attjsonlist = [];
 				var attjson;
+				/* Get type list */
 				for (i = 0; i < typelistnum.length; i++) {
 					typejson =
 					{
@@ -229,6 +235,7 @@ Ext.define('logax.view.rule.AddRule', {
 					};
 					typejsonlist.push(typejson);
 				}
+				/* Get attribute list */
 				var attlistnum = logax.store.TypeNumber.attlist;
 				for (i = 0; i < attlistnum.length; i++) {
 					attjson =
@@ -237,6 +244,7 @@ Ext.define('logax.view.rule.AddRule', {
 					};
 					attjsonlist.push(attjson);
 				}
+				/* Make jsonRequest */
 				var jsonRequest = 
 				{
 					"name":Ext.getCmp('name').getValue(),
@@ -246,6 +254,7 @@ Ext.define('logax.view.rule.AddRule', {
 					"attributes":attjsonlist
 				};
 				
+				/* Send request */
 				Ext.Ajax.request({
 					url:"api/addrule",
 					method:"POST",
@@ -253,9 +262,11 @@ Ext.define('logax.view.rule.AddRule', {
 					success:function(result, request) {
 						var job = Ext.JSON.decode(result.responseText);
 						if (!job.success) {
+							/* Fail to add */
 							Ext.Msg.alert("Fail", job.message);
 						}
 						else {
+							/* Success to add */
 							Ext.Msg.alert("Success", "Add Rule Name " + Ext.getCmp('name').getValue());
 						}
 					},
