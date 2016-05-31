@@ -1,3 +1,9 @@
+/*
+ * This view is main page of the Type page.
+ * You can enter by http://localhost:8080/logax/#dashboard
+ * This page contain dashboardform
+ */
+
 Ext.define('logax.view.dashboard.Dashboard', {
 	extend: 'Ext.container.Container',
 	xtype: 'dashboard',
@@ -10,34 +16,9 @@ Ext.define('logax.view.dashboard.Dashboard', {
     layout: 'responsivecolumn',
 
 	items: [
-		//{
-		//	xtype: 'typelistform',
-		//	userCls: 'big-100 small-100 shadow'
-		//},
 		{		
 			xtype: 'dashboardform',
             userCls: 'big-100 small-100 shadow'
 	    }
     ]
-/*
-	requires: [
-		'Ext.container.Container'
-	],
-
-	layout: {
-		type: 'vbox'
-	},
-
-	items: [
-		{
-			xtype: 'textfield',
-			name: 'typename',
-			id: 'typename',
-			fieldLabel: 'Wow',
-			allowBlank: false
-		},
-		{
-			xtype: 'dashboardform'
-		}
-	]*/
 });

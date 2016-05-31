@@ -1,3 +1,8 @@
+/*
+ * This view is container of the dashboard.
+ * It includes, type list, type information page, additional button that send request to server
+ */
+
 Ext.define('logax.view.dashboard.Type', {
 	extend: 'Ext.form.Panel',
 	xtype: 'dashboardform',
@@ -18,6 +23,7 @@ Ext.define('logax.view.dashboard.Type', {
 	layout: 'column',
 	items: [
 		{
+			/* It shows list of the type */
 			xtype: 'treepanel',
 			width: 200,
 			title: 'Type List',
@@ -37,9 +43,11 @@ Ext.define('logax.view.dashboard.Type', {
 				}
 			}),
 			listeners: {
+				/* When click item in the list, show the specific information to the type information fieldset */
 				itemclick : function(view, rec, item, index, eventObj) {
 					if (rec.get('leaf')) {
 						view.up('form').down('fieldset').removeAll();
+						/* Get number of the regex */
 						Ext.Ajax.request({
 							url: 'api/gettypeframe/' + rec.get('text'),
 							method: 'GET',
@@ -48,6 +56,7 @@ Ext.define('logax.view.dashboard.Type', {
 								var i;
 								view.up('form').down('fieldset').removeAll();
 								var resultjson = Ext.JSON.decode(result.responseText);
+								/* Make enough textfield to get regular expresstion */
 								for (i = 0; i < resultjson.regexnum; i++) {
 									var regextext = Ext.create('Ext.form.field.Text',
 									{
@@ -57,6 +66,7 @@ Ext.define('logax.view.dashboard.Type', {
 									});
 									view.up('form').down('fieldset').add(regextext);
 								}
+								/* Fill the form */
 								view.up('form').getForm().load({
 									url: 'api/gettype/' + rec.get('text'),
 									method: 'GET'
@@ -70,6 +80,7 @@ Ext.define('logax.view.dashboard.Type', {
 				}
 			}
 		},
+		/* This is the container that shows type information */
 		{
 			margin: '0 0 0 10',
 			xtype: 'fieldcontainer',
@@ -77,6 +88,7 @@ Ext.define('logax.view.dashboard.Type', {
 			layout: 'anchor',
 			defaultType: 'textfield',
 			items: [
+				/* Type name */
 				{
 					fieldLabel: 'Type Name',
 					id: 'typename',
@@ -92,6 +104,7 @@ Ext.define('logax.view.dashboard.Type', {
 							id: 'regexnum',
 							allowBlank: true
 						},
+						/* Make regular textfield that user can put number of regular expresstion */
 						{
 							xtype: 'button',
 							text: 'make',
@@ -107,12 +120,14 @@ Ext.define('logax.view.dashboard.Type', {
 										id: Ext.String.format('typeregex' + i),
 										allowBlank: false
 									});
+									/* Add to fieldset form */
 									me.up('form').down('fieldset').add(regextext);
 								}
 							}
 						}
 					]
 				},
+				/* Regular expresstion field */
 				{
 					xtype: 'fieldset',
 					title: 'Regex List',
@@ -124,11 +139,13 @@ Ext.define('logax.view.dashboard.Type', {
 					items: [{
 					}]
 				},
+				/* Type path */
 				{
 					fieldLabel: 'Path',
 					id: 'path',
 					allowBlank: false
 				},
+				/* Type priority */
 				{
 					xtype: 'radiogroup',
 					fieldLabel: 'Priority',
@@ -147,6 +164,7 @@ Ext.define('logax.view.dashboard.Type', {
 						   id: 'low'
 					}]
 				},
+				/* Send request to server /api/addtype with jsonobject */
 				{
 					xtype: 'button',
 					text: 'Add',
@@ -164,6 +182,7 @@ Ext.define('logax.view.dashboard.Type', {
 							};
 							regexlist.push(jsonregex);
 						}
+						/* Make the request */
 						var jsonRequest = 
 						{
 							"typename":Ext.getCmp('typename').getValue(),
@@ -172,6 +191,7 @@ Ext.define('logax.view.dashboard.Type', {
 							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
 							"path":Ext.getCmp('path').getValue()
 						};
+						/* Send to the server */
 						Ext.Ajax.request({
 							url:"api/addtype",
 							method:"POST",
@@ -180,20 +200,25 @@ Ext.define('logax.view.dashboard.Type', {
 							success:function(result, request){
 								var job = Ext.JSON.decode(result.responseText);
 								if (!job.success) {
+									/* Fail to add */
 									Ext.Msg.alert("Fail", job.message);
 								}
 								else {
+									/* Success to add it */
 									Ext.Msg.alert("Success", "Add Type Name " + Ext.getCmp('typename').getValue());
 								}
 
 							},
 							failure:function(result, request) {
+								/* Connection failed */
 								Ext.Msg.alert("Failed");
 							}
 						});
+						/* Reload the treepanel */
 						me.up('form').down('treepanel').getStore().load();
 					}
 				},
+				/* Send request to server /api/edittype with jsonobject. Can edit type */
 				{
 					xtype: 'button',
 					text: 'Edit',
@@ -211,6 +236,7 @@ Ext.define('logax.view.dashboard.Type', {
 							};
 							regexlist.push(jsonregex);
 						}
+						/* Make jsonrequest. Get information from the form */
 						var jsonRequest = 
 						{
 							"typename":Ext.getCmp('typename').getValue(),
@@ -219,6 +245,7 @@ Ext.define('logax.view.dashboard.Type', {
 							"priority":Ext.ComponentQuery.query('[name=priority]')[0].getGroupValue(),
 							"path":Ext.getCmp('path').getValue()
 						};
+						/* Send to server */
 						Ext.Ajax.request({
 							url:"api/edittype",
 							method:"POST",
@@ -227,9 +254,11 @@ Ext.define('logax.view.dashboard.Type', {
 							success:function(result, request){
 								var job = Ext.JSON.decode(result.responseText);
 								if (!job.success) {
+									/* Fail to edit it */
 									Ext.Msg.alert("Fail", job.message);
 								}
 								else {
+									/* Success to edit */
 									Ext.Msg.alert("Success", "Edit Type Name " + Ext.getCmp('typename').getValue());
 								}
 							},
@@ -237,9 +266,11 @@ Ext.define('logax.view.dashboard.Type', {
 								Ext.Msg.alert("Failed");
 							}
 						});
+						/* Reload treepanel */
 						me.up('form').down('treepanel').getStore().load();
 					}
 				},
+				/* Delete specific type that has typename. Request is send to api/deletetype/{typename} */
 				{
 					xtype: 'button',
 					text: 'Delete',
@@ -252,16 +283,20 @@ Ext.define('logax.view.dashboard.Type', {
 							success:function(result, request) {
 								var job = Ext.JSON.decode(result.responseText);
 								if (!job.success) {
+									/* Fail to delete */
 									Ext.Msg.alert("Fail", job.message);
 								}
 								else {
+									/* Success to delete */
 									Ext.Msg.alert("Success", "Delete Type Name " + Ext.getCmp('typename').getValue());
 								}
 							},
 							failure:function(result, request) {
+								/* Connection failed */
 								Ext.Msg.alert("Failed");
 							}
 						});
+						/* Reload treepanel */
 						me.up('form').down('treepanel').getStore().load();
 					}
 				}
@@ -272,12 +307,14 @@ Ext.define('logax.view.dashboard.Type', {
 			xtype: 'button',
 			text: 'Refresh',
 			handler: function() {
+				/* Clean this form */
 				var me = this;
 				me.up('form').getForm().reset();
 				me.up('form').down('fieldset').removeAll();
 				me.up('form').down('treepanel').getStore().load();
 			}
 		},
+		/* Delete all the type in the DB. Send request to api/deletealltype */
 		{
 			xtype: 'button',
 			text: 'Delete All Type',
@@ -291,16 +328,20 @@ Ext.define('logax.view.dashboard.Type', {
 					success:function(result, request){
 						var job = Ext.JSON.decode(result.responseText);
 						if (!job.success) {
+							/* Fail to delete */
 							Ext.Msg.alert("Fail", job.message);
 						}
 						else {
+							/* Success to delete */
 							Ext.Msg.alert("Success", "Success to delete all type");
 						}
 					},
 					failure:function(result, request){
+						/* Connection Failed */
 						Ext.Msg.alert("Connection Failed");
 					}
 				});
+				/* Reload treepanel */
 				me.up('form').down('treepanel').getStore().load();
 			}
 		}]
