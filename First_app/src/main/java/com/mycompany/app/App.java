@@ -117,7 +117,7 @@ public class App {
 	 * and doesn't change anymore in program's life cycle.
 	 */
 	private static ArrayList<Rule> baseRules;
-	
+
 	/** The "Rule"s array indicating that current state of the rules (how many types are proceeded). */
 	private static ArrayList<Rule> remainRules;
 
@@ -170,7 +170,7 @@ public class App {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/** Write complete rule to mongoDB */
 	private static void writeDB (Rule r) {
 		Mongo mongo = new Mongo("localhost", 27017);
@@ -203,7 +203,6 @@ public class App {
 		baseRules = new ArrayList<Rule>();
 		remainRules = new ArrayList<Rule>();
 		readRule();
-//		logger.error("Initial baseRules size: " + baseRules.size());
 
 		SparkConf sparkConf = new SparkConf().setAppName("Logax");
 		/* 
@@ -281,7 +280,7 @@ public class App {
 									e.printStackTrace();
 								}
 
-								
+
 								ArrayList<Rule> tempArray = new ArrayList<Rule>();
 								for (Rule r : result) {
 									/* Checking for newly created rules from baseRule (not remainRule now!) */
@@ -298,12 +297,11 @@ public class App {
 									case COMPLETE:
 										r.update(type);
 										writeDB(r);
-										logger.error("COMPLETE: " + rule.getName());
 										break;
 									}
 								}
 								result = tempArray;
-								
+
 								Rule baseTemp = rule.ruleClone();
 								switch (baseTemp.check(type)) {
 								/* Checking for baseRule */
@@ -318,11 +316,10 @@ public class App {
 								case COMPLETE:
 									baseTemp.update(type);
 									writeDB(baseTemp);
-									logger.error("COMPLETE: " + rule.getName());
 									break;
 								}
 							}
-							
+
 							return result; /* It will be added to remainRules */
 						}
 						else {
@@ -348,11 +345,10 @@ public class App {
 								case COMPLETE:
 									rule.update(type);
 									writeDB(rule);
-									logger.error("COMPLETE: " + rule.getName());
 									return result;
 								}
 							}
-							
+
 							result.add(rule);
 							return result; /* result has only one element */
 						}
