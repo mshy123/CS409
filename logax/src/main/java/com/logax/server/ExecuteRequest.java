@@ -1,4 +1,4 @@
-/*
+/**
  * ExecuteRequest
  * version 1.0
  * This class handle the type.
@@ -31,7 +31,7 @@ public class ExecuteRequest
 		path = null;
 	}
 
-	/*
+	/**
 	 * This method is use for print each type specification in the fluent.conf
 	 */
 	public void print(FileWriter writer, String globalposfile) throws IOException
@@ -94,8 +94,8 @@ public class ExecuteRequest
 	{
 		return DBClient.addType(typename, regexnum, typeregex, priority, path);
 	}
-	
-	/*
+
+	/**
 	 * This method edit the type in the type DB
 	 */
 	public int editDBType()
@@ -103,7 +103,7 @@ public class ExecuteRequest
 		return DBClient.editType(typename, regexnum, typeregex, priority, path);
 	}
 
-	/*
+	/**
 	 * This method remove the type in the type DB
 	 */
 	public void removeDBType()
@@ -111,7 +111,7 @@ public class ExecuteRequest
 		DBClient.removeType(typename);
 	}
 
-	/*
+	/**
 	 * This method setting this class when typeregex has String format
 	 */
 	public void parse2(JSONObject jsonObject) throws JsonTypeException
@@ -125,7 +125,7 @@ public class ExecuteRequest
 		this.path = json.getString("path");
 	}
 
-	/*
+	/**
 	 * This method setting this class when typeregex has JSONArray format
 	 */	
 	public void parse(JSONObject jsonObject) throws JsonTypeException

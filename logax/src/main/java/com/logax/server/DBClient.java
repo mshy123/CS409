@@ -25,7 +25,7 @@ import org.json.simple.parser.ParseException;
 import java.io.*;
 
 /*
- * This class extends Block<Document> that chech each document in iteration
+ * This class extends Block<Document> that check each document in iteration
  * It return the JSONArray that will print in the Rule.json
  */
 class RuleArrayBlock implements Block<Document>
@@ -41,9 +41,21 @@ class RuleArrayBlock implements Block<Document>
 	{
 		JSONParser parser = new JSONParser();
 		JSONObject rule = null;
+		JSONArray newArray = new JSONArray();
 		try
 		{
 			rule = (JSONObject)parser.parse(document.getString("body"));
+			JSONArray types = (JSONArray)rule.get("types");
+			for (Object obj : types) {
+				JSONObject type = (JSONObject) obj;
+				String name = (String)type.get("name");
+				name = DBClient.getTypePriority(name) + name;
+				type.remove("name");
+				type.put("name", name);
+				newArray.add(type);
+			}
+			rule.remove("types");
+			rule.put("types", newArray);
 			String order = (String)rule.get("ordered");
 			rule.remove("ordered"); //type casting
 			if(order.equals("true")) {
@@ -262,6 +274,16 @@ public class DBClient
 		}
 
 		return 0;
+	}
+
+	public static String getTypePriority(String typename)
+	{
+		init();
+		FindIterable<Document> iterable = db.getCollection("type").find(new Document("typename", typename));
+		for (Document document : iterable) {
+			return document.getString("priority") + ".";
+		}
+		return "low.";
 	}
 
 	/*
