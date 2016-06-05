@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,6 +34,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -120,7 +122,7 @@ public class App {
 
 	/** The "Rule"s array indicating that current state of the rules (how many types are proceeded). */
 	private static ArrayList<Rule> remainRules;
-
+	
 	final static Logger logger = Logger.getLogger(App.class);
 
 	/**
@@ -188,6 +190,10 @@ public class App {
 		}
 		document.put("types", types);
 
+		Date now = new Date();
+		BasicDBObject timeNow = new BasicDBObject("date", now);
+		document.put("savedTime", timeNow);
+		
 		collection.insert(document);
 		mongo.close();
 	}
@@ -229,7 +235,7 @@ public class App {
 		});
 
 		/* 
-		 * Each RDD in typeRUlePairDStream is composed of pairs.
+		 * Each RDD in typeRulePairDStream is composed of pairs.
 		 * ( [packet, packet, ...], Rule )
 		 * Total number of pairs is ( baseRules + remainRules )
 		 * So the degree of distribution is up to number of rules.
