@@ -1,1 +1,1 @@
-{"Rule":[{"duration":1000,"ordered":false,"types":[{"number":1,"name":"apacheaccess"}],"name":"ApacheAccess","attributes":[{"name":"client"}]}]}
+{"Rule":[{"duration":1000,"ordered":false,"types":[{"number":1,"name":"apacheaccesshigh."}],"name":"ApacheAccess","attributes":[{"name":"client"}]},{"duration":5000,"ordered":false,"types":[{"number":4,"name":"apacheaccesshigh."}],"name":"apacheRule","attributes":[{"name":"host"},{"name":"user"}]}]}

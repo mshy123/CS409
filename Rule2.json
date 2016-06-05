@@ -1,0 +1,15 @@
+{"Rule":
+	[
+	{"name":"apacheRule", "duration":5000, "ordered":false, "types": 
+		[
+		{"name":"high.apacheget", "number":4}
+		],
+			"attributes":
+				[
+				{"name":"host"},
+				{"name":"user"}
+		]
+	}
+	]
+
+}
