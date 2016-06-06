@@ -1,10 +1,6 @@
 package com.mycompany.app;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -29,7 +25,6 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
@@ -37,19 +32,12 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.Mongo;
 
 import scala.Tuple2;
 
@@ -123,80 +111,11 @@ public class App {
 	/** The "Rule"s array indicating that current state of the rules (how many types are proceeded). */
 	private static ArrayList<Rule> remainRules;
 	
+	/** Input packet stream that is broadcated to each node */ 
+	public static Broadcast<ArrayList<String>> inputPacketStream;
+	
 	final static Logger logger = Logger.getLogger(App.class);
 
-	/**
-	 * Read Rule.json and save parse into Rule instances.
-	 * All result are saved in baseRules.
-	 */
-	private static void readRule () {
-		try {
-			JSONParser parser = new JSONParser();
-			Object obj = parser.parse(new FileReader("Rule.json"));
-
-			JSONObject jsonObject = (JSONObject) obj;
-			JSONArray Rules = (JSONArray) jsonObject.get("Rule");
-
-			for (Object rule : Rules) {
-				JSONObject jsonRule = (JSONObject) rule;
-
-				JSONArray jsonTypes = (JSONArray) jsonRule.get("types");
-				ArrayList<Type> types = new ArrayList<Type>();
-
-				for (Object type : jsonTypes) {
-					for (int i=0;
-							i<Math.toIntExact((Long) ((JSONObject) type).get("number"));
-							i++) {
-						types.add(new Type ((String) ((JSONObject) type).get("name")));
-					}
-				}
-				JSONArray jsonAttributes = (JSONArray) jsonRule.get("attributes");
-				ArrayList<String> attributes = new ArrayList<String>();
-
-				for (Object attribute : jsonAttributes) {
-					attributes.add(((JSONObject) attribute).get("name").toString());
-				}
-
-				Rule Rule = new Rule ((String) jsonRule.get("name"),
-						(Long) jsonRule.get("duration"),
-						(Boolean) jsonRule.get("ordered"), 
-						types, attributes);
-				baseRules.add(Rule);
-			}
-
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-	}
-
-	/** Write complete rule to mongoDB */
-	private static void writeDB (Rule r) {
-		Mongo mongo = new Mongo("localhost", 27017);
-		DB db = mongo.getDB("test");
-		DBCollection collection = db.getCollection("Rules");
-		BasicDBObject document = new BasicDBObject();
-		document.put("name", r.getName());
-
-		ArrayList<BasicDBObject> types = new ArrayList<BasicDBObject>();
-		for (Type t : r.getCheckedTypes()) {
-			BasicDBObject tmp = new BasicDBObject();
-			tmp.put("name", t.typeName);
-			tmp.put("content", t.content);
-			types.add(tmp);
-		}
-		document.put("types", types);
-
-		Date now = new Date();
-		BasicDBObject timeNow = new BasicDBObject("date", now);
-		document.put("savedTime", timeNow);
-		
-		collection.insert(document);
-		mongo.close();
-	}
 
 	public static void main(String[] args) {
 		if (args.length < 4) {
@@ -208,15 +127,15 @@ public class App {
 		/* Rules initialization */
 		baseRules = new ArrayList<Rule>();
 		remainRules = new ArrayList<Rule>();
-		readRule();
+		RuleReader.readRule(baseRules);
 
 		SparkConf sparkConf = new SparkConf().setAppName("Logax");
+		
 		/* 
 		 * Create the context with 2 seconds batch size
 		 * Batch size can be tuned for performance. 
 		 */
 		final JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
-
 		int numThreads = Integer.parseInt(args[3]);
 		Map<String, Integer> topicMap = new HashMap<String, Integer>();
 		String[] topics = args[2].split(",");
@@ -235,25 +154,25 @@ public class App {
 		});
 
 		/* 
-		 * Each RDD in typeRulePairDStream is composed of pairs.
+		 * Each RDD in typeRulePairDStream is composed of Rules.
+		 * Each Rule will be combined to inputPacketStream.
 		 * ( [packet, packet, ...], Rule )
 		 * Total number of pairs is ( baseRules + remainRules )
 		 * So the degree of distribution is up to number of rules.
 		 */
-		JavaPairDStream<ArrayList<String>, Rule> typeRulePairDStream = lines.transformToPair(
-				new Function<JavaRDD<String>, JavaPairRDD <ArrayList<String>, Rule>>() {
-					public JavaPairRDD<ArrayList<String>, Rule> call (JavaRDD<String> t) {
+		JavaDStream<Rule> typeRulePairDStream = lines.transform(
+				new Function<JavaRDD<String>, JavaRDD<Rule>>() {
+					public JavaRDD<Rule> call (JavaRDD t) {
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
 
-						ArrayList<ArrayList<String>> a = new ArrayList<ArrayList<String>>();
-						ArrayList<String> arrayListT = new ArrayList<String>();
-						arrayListT.addAll(t.collect());
-						a.add(arrayListT);
-						JavaRDD<ArrayList<String>> tmp = jssc.sparkContext().parallelize(a);
+						ArrayList<String> packetStream = new ArrayList<String>();
+						packetStream.addAll(t.collect());
+						
+						inputPacketStream = jssc.sparkContext().broadcast(packetStream);
 
-						return tmp.cartesian(rulesRDD);
+						return rulesRDD;
 					}
 				});
 
@@ -263,14 +182,14 @@ public class App {
 		 * When RUle is remainRule, it is only checked within itself.
 		 */
 		JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.flatMap (
-				new FlatMapFunction<Tuple2<ArrayList<String>, Rule>, Rule> () {
+				new FlatMapFunction<Rule, Rule> () {
 
-					public Iterable<Rule> call(Tuple2<ArrayList<String>, Rule> t) throws Exception {
+					public Iterable<Rule> call(Rule t) throws Exception {
 						// TODO Auto-generated method stub
 
 						ArrayList<Rule> result = new ArrayList<Rule>(); /* return value */
-						ArrayList<String> packetStream = t._1; /* input packet stream */
-						Rule rule = t._2.ruleClone(); /* Rule for checking */
+						ArrayList<String> packetStream = inputPacketStream.value(); /* input packet stream */
+						Rule rule = t.ruleClone(); /* Rule for checking */
 						Type type = null;
 						Boolean fromBase = rule.isBase();
 
@@ -302,7 +221,7 @@ public class App {
 										break;
 									case COMPLETE:
 										r.update(type);
-										writeDB(r);
+										DBWriter.writeDB(r);
 										break;
 									}
 								}
@@ -321,7 +240,7 @@ public class App {
 									break;
 								case COMPLETE:
 									baseTemp.update(type);
-									writeDB(baseTemp);
+									DBWriter.writeDB(baseTemp);
 									break;
 								}
 							}
@@ -350,7 +269,7 @@ public class App {
 									return result; /* result has no element */
 								case COMPLETE:
 									rule.update(type);
-									writeDB(rule);
+									DBWriter.writeDB(rule);
 									return result;
 								}
 							}
@@ -367,6 +286,7 @@ public class App {
 					public void call(JavaRDD<Rule> t) throws Exception {
 						// TODO Auto-generated method stub
 
+						if (t.isEmpty()) return;
 						List<Rule> a = t.collect();
 						int cnt = 0;
 						for (Rule r : a) {
