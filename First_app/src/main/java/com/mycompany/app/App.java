@@ -25,13 +25,14 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -111,11 +112,7 @@ public class App {
 	/** The "Rule"s array indicating that current state of the rules (how many types are proceeded). */
 	private static ArrayList<Rule> remainRules;
 	
-	/** Input packet stream that is broadcated to each node */ 
-	public static Broadcast<ArrayList<String>> inputPacketStream;
-	
 	final static Logger logger = Logger.getLogger(App.class);
-
 
 	public static void main(String[] args) {
 		if (args.length < 4) {
@@ -130,12 +127,12 @@ public class App {
 		RuleReader.readRule(baseRules);
 
 		SparkConf sparkConf = new SparkConf().setAppName("Logax");
-		
 		/* 
 		 * Create the context with 2 seconds batch size
 		 * Batch size can be tuned for performance. 
 		 */
 		final JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
+
 		int numThreads = Integer.parseInt(args[3]);
 		Map<String, Integer> topicMap = new HashMap<String, Integer>();
 		String[] topics = args[2].split(",");
@@ -154,25 +151,25 @@ public class App {
 		});
 
 		/* 
-		 * Each RDD in typeRulePairDStream is composed of Rules.
-		 * Each Rule will be combined to inputPacketStream.
+		 * Each RDD in typeRulePairDStream is composed of pairs.
 		 * ( [packet, packet, ...], Rule )
 		 * Total number of pairs is ( baseRules + remainRules )
 		 * So the degree of distribution is up to number of rules.
 		 */
-		JavaDStream<Rule> typeRulePairDStream = lines.transform(
-				new Function<JavaRDD<String>, JavaRDD<Rule>>() {
-					public JavaRDD<Rule> call (JavaRDD t) {
+		JavaPairDStream<ArrayList<String>, Rule> typeRulePairDStream = lines.transformToPair(
+				new Function<JavaRDD<String>, JavaPairRDD <ArrayList<String>, Rule>>() {
+					public JavaPairRDD<ArrayList<String>, Rule> call (JavaRDD<String> t) {
 						JavaRDD<Rule> baseRulesRDD = jssc.sparkContext().parallelize(baseRules);
 						JavaRDD<Rule> remainRulesRDD = jssc.sparkContext().parallelize(remainRules);
 						JavaRDD<Rule> rulesRDD = baseRulesRDD.union(remainRulesRDD);
 
-						ArrayList<String> packetStream = new ArrayList<String>();
-						packetStream.addAll(t.collect());
-						
-						inputPacketStream = jssc.sparkContext().broadcast(packetStream);
+						ArrayList<ArrayList<String>> a = new ArrayList<ArrayList<String>>();
+						ArrayList<String> arrayListT = new ArrayList<String>();
+						arrayListT.addAll(t.collect());
+						a.add(arrayListT);
+						JavaRDD<ArrayList<String>> tmp = jssc.sparkContext().parallelize(a);
 
-						return rulesRDD;
+						return tmp.cartesian(rulesRDD);
 					}
 				});
 
@@ -182,14 +179,14 @@ public class App {
 		 * When RUle is remainRule, it is only checked within itself.
 		 */
 		JavaDStream<Rule> resultRuleDstream = typeRulePairDStream.flatMap (
-				new FlatMapFunction<Rule, Rule> () {
+				new FlatMapFunction<Tuple2<ArrayList<String>, Rule>, Rule> () {
 
-					public Iterable<Rule> call(Rule t) throws Exception {
+					public Iterable<Rule> call(Tuple2<ArrayList<String>, Rule> t) throws Exception {
 						// TODO Auto-generated method stub
 
 						ArrayList<Rule> result = new ArrayList<Rule>(); /* return value */
-						ArrayList<String> packetStream = inputPacketStream.value(); /* input packet stream */
-						Rule rule = t.ruleClone(); /* Rule for checking */
+						ArrayList<String> packetStream = t._1; /* input packet stream */
+						Rule rule = t._2.ruleClone(); /* Rule for checking */
 						Type type = null;
 						Boolean fromBase = rule.isBase();
 
@@ -286,7 +283,6 @@ public class App {
 					public void call(JavaRDD<Rule> t) throws Exception {
 						// TODO Auto-generated method stub
 
-						if (t.isEmpty()) return;
 						List<Rule> a = t.collect();
 						int cnt = 0;
 						for (Rule r : a) {

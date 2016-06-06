@@ -11,7 +11,7 @@ import com.mongodb.Mongo;
 public class DBWriter {
 	/** Write complete rule to mongoDB */
 	public static void writeDB (Rule r) {
-		Mongo mongo = new Mongo("localhost", 27017);
+		Mongo mongo = new Mongo("143.248.222.116", 27017);
 		DB db = mongo.getDB("test");
 		DBCollection collection = db.getCollection("Rules");
 		BasicDBObject document = new BasicDBObject();
