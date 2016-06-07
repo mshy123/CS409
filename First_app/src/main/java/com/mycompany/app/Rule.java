@@ -147,6 +147,14 @@ public class Rule implements Serializable{
 				}
 				
 				if(attributeList.size() == 0) {
+					if(checkedTypes.size() >= types.size() - 1) {
+						/* 
+						 * Return COMPLETE when the rule is complete if input rule is updated to the rule.
+						 * When "the rule + input type = complete rule"
+						 */
+						return RESULTCODE.COMPLETE; 
+					}
+					
 					return RESULTCODE.UPDATE; /* The rule has no "attributeList" */
 				} else {
 					/* The rule has "attributeList" */	
@@ -216,6 +224,13 @@ public class Rule implements Serializable{
 						 * When the rule is base rule.
 						 * There is no comparable attribute set. 
 						 */
+						if(checkedTypes.size() >= types.size() - 1) {
+							/* 
+							 * Return COMPLETE when the rule is complete if input rule is updated to the rule.
+							 * When "the rule + input type = complete rule"
+							 */
+							return RESULTCODE.COMPLETE; 
+						}
 						return RESULTCODE.UPDATE;
 					}
 					
